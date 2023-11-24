@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+        label {
+            background : skyblue;
+            padding: 5px 10px;
+            color: #fff;
+            height: 30px;
+            box-sizing: border-box;
+            font-weight: bold;
+        }
+        select{padding: 5px 10px; height: 30px; box-sizing: border-box; border-radius: 4px; border: none; font-weight: bold;}
+        #user {
+            display: flex; 
+            justify-content : flex-start;
+        }
+        #admin {
+            display: flex; 
+            justify-content : flex-start;
+        }
+        #admin div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
+        #user div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
+        section {margin-bottom: 50px;}
+        button {max-height: 50px;}
+  </style>
+  <script src="./common.js"></script>
+</head>
+<body>
+    <div style="display: flex;">
+      <h1>관리자</h1>
+      <button type="button" id="save">확인</button>
+    </div>
+    <div id = "admin"></div>
+    <script>
+        (function() {
+            adminDefaultSetting(document.getElementById("admin"), "selAdmin", "save");
+
+            /** param : parentElement, selectBox-className, save-button-idName */
+            function adminDefaultSetting(parentElement, className, buttonName) {
+                const defaultCategories = localStorage.getItem("defaultCategories") != null ? JSON.parse(localStorage.getItem("defaultCategories")) : undefined;
+                makeCategory(parentElement, className, defaultCategories);
+
+                document.getElementById(buttonName).addEventListener("click", ()=> {
+                    const arr = findSelectedOption(className);
+                    localStorage.setItem("defaultCategories", JSON.stringify(arr));
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
