@@ -1,4 +1,4 @@
-const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree} = (function() {
+const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree, relations} = (function() {
     let defaultCategorySymbol = Symbol('default');
 
     let loadCategoryGroups = function() {
@@ -36,6 +36,9 @@ const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, gener
             }, {
             id: 11,
             name: 'JDK Version'
+            }, {
+            id: 12,
+            name: '년도'
             }
         ];
     }
@@ -168,11 +171,29 @@ const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, gener
             },
             { id: 32,
             name: '8~15',
-            categoryGroupId: 11, 
+            categoryGroupId: 11,
             },
             { id: 33,
             name: '15~',
-            categoryGroupId: 11, 
+            categoryGroupId: 11,
+            option: '<',
+            target: 36,
+            },
+            { id: 34,
+            name: '2020',
+            categoryGroupId: 12,
+            },
+            { id: 35,
+            name: '2021',
+            categoryGroupId: 12,
+            },
+            { id: 36,
+            name: '2022',
+            categoryGroupId: 12,
+            },
+            { id: 37,
+            name: '2023',
+            categoryGroupId: 12,
             },
         ];
     };
@@ -197,12 +218,20 @@ const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, gener
             categoryGroupId: 5,
             categoryId: 14
             },
+            //---
+            {
+                relationGroupId: 1,
+                order: 4,
+                categoryGroupId: 12,
+                categoryId: 34
+            },
+            //---
             {
             relationGroupId: 1,
-            order: 4,
+            order: 5,
             categoryGroupId: 11,
             categoryId: null
-            },          
+            },
             {
             relationGroupId: 2,
             order: 1,
@@ -424,46 +453,146 @@ const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, gener
 
 
     let relations = loadRelations();
-    let relationTree = {
-    categoryGroupId: 1,
-    categories: {}
-    }; 
 
     let generateRelationTree = function() {
+        let relationTree = {
+            categoryGroupId: relations[0].categoryGroupId,
+            categories: {}
+        };
         let prevRelationgroupId=0;
         let current = undefined;
-        let idx = 0;
 
         relations.forEach(relation=>{
-            if(prevRelationgroupId === relation.relationGroupId) {
-            // 이전 릴레이션 그룹id와 릴레이션의 릴레이션 그룹id가 일치하면
-            // current에 릴레이션의 그룹id를 넣어주고, caterories엔 기존 categories 정보를 넣어줌
-            current.categoryGroupId = relation.categoryGroupId;
-            current.categories = current.categories || {};
-            } else if(prevRelationgroupId !== relation.relationGroupId) {
-            // 이전 릴레이션 그룹id와 릴레이션의 릴레이션 그룹id가 일치하지 않으면 
-            // current에 relationTree 기본 정보를 생성해줌
-            current = relationTree;
-
-            // 다음 비교를 위해 이전 릴레이션 그룹id를 넣어줌
-            prevRelationgroupId = relation.relationGroupId;
+            if(prevRelationgroupId==relation.relationGroupId) {
+                current.categoryGroupId = relation.categoryGroupId;
+                current.categories = current.categories || {};
+            } else if(prevRelationgroupId!=relation.relationGroupId) { // 끝났음
+                current = relationTree;
+                prevRelationgroupId = relation.relationGroupId;
             }
 
-            // categoryId에 릴레이션의 카테고리 id가 있으면 id를, 없으면 default값을 저장
             let categoryId = relation.categoryId || defaultCategorySymbol;
-
-            // current의 categories에 위의 현재 categoryId 프로퍼티에 value가 있으면 유지, 없으면 빈 객체로 저장
             current.categories[categoryId] = current.categories[categoryId] || {};
-            // current에 현재 categories의 categoryId정보를 저장
             current = current.categories[categoryId];
-            // current는 relationsTree와 메모리주소를 공유함
-        })
-    };
-    generateRelationTree();
+        });
 
-    return {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree};
+        return relationTree;
+    };
+    let relationTree = generateRelationTree();
+
+    return {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree, relations};
     
 })();
+
+let toggle = false;
+let asyncLoadCategories = function(categoryGroupId) {
+    return new Promise((resolve, reject) => {
+        if(categoryGroupId == 2) {
+            toggle = !toggle;
+            setTimeout(()=>{
+                if(toggle) {
+                     resolve([
+                        { id: 4,
+                            name: 'BE',
+                            categoryGroupId: 2,
+                        },
+                        { id: 5,
+                            name: 'FE',
+                            categoryGroupId: 2,
+                        },
+                        { id: 6,
+                            name: 'ME',
+                            categoryGroupId: 2,
+                        },
+                        { id: 7,
+                            name: 'UI',
+                            categoryGroupId: 2,
+                        },
+                        { id: 10007,
+                            name: 'DESIGN',
+                            categoryGroupId: 2,
+                        }
+                    ]);
+                } else {
+                     resolve([
+                        { id: 4,
+                            name: 'BE',
+                            categoryGroupId: 2,
+                        },
+                        { id: 5,
+                            name: 'FE',
+                            categoryGroupId: 2,
+                        },
+                        { id: 6,
+                            name: 'ME',
+                            categoryGroupId: 2,
+                        },
+                        { id: 7,
+                            name: 'UI',
+                            categoryGroupId: 2,
+                        }
+                    ]);
+                }
+            }, 2000);
+        }
+        else if(categoryGroupId == 5) {
+            setTimeout(() => {
+                if(toggle) {
+                    resolve([
+                        {
+                            id: 14,
+                            name: 'JAVA',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 15,
+                            name: 'Spring',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 16,
+                            name: 'C',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 17,
+                            name: 'C#',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 10008,
+                            name: 'PIGMA',
+                            categoryGroupId: 5,
+                        }
+                    ]);
+                } else {
+                    resolve([
+                        {
+                            id: 14,
+                            name: 'JAVA',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 15,
+                            name: 'Spring',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 16,
+                            name: 'C',
+                            categoryGroupId: 5,
+                        },
+                        {
+                            id: 17,
+                            name: 'C#',
+                            categoryGroupId: 5,
+                        },
+                    ]);
+                }
+            }, 3000);
+        }
+    });
+};
 
 
 /**
@@ -480,16 +609,20 @@ function makeCategory(parentElement = document.body, className = ".sel",  data =
         makeDefaultCategory(obj, data);
     }
 
-    const categoryGroups = categoryGroupMap[obj.categoryGroupId];
-    const paramCategoryId = data[index];
-    const categories = obj.categories[paramCategoryId] ||
-        obj.categories[Object.keys(obj.categories)[0]] ||
-        obj.categories[defaultCategorySymbol];
+    if(obj.categoryGroupId) {
+        const categoryGroups = categoryGroupMap[obj.categoryGroupId];
+        const paramCategoryId = data[index];
+        const categories = obj.categories[paramCategoryId] ||
+            obj.categories[Object.keys(obj.categories)[0]] ||
+            obj.categories[defaultCategorySymbol];
 
-    createCategory(categoryGroups.categories, obj.categoryGroupId, paramCategoryId, parentElement, className);
+        createCategory(categoryGroups.categories, obj.categoryGroupId, paramCategoryId, parentElement, className);
 
-    if(0 < Object.keys(categories).length) {
-        makeCategory(parentElement, className, data, ++index, categories);
+        if(0 < Object.keys(categories).length) {
+            makeCategory(parentElement, className, data, ++index, categories);
+        } else {
+            addDraggable(parentElement, className);
+        }
     }
 }
 
@@ -510,22 +643,26 @@ function makeDefaultCategory(obj, arr) {
 function createCategory(categoryGroups, currentCategoryGroupId, paramCategoryId, parentElement, className) {
     const {div, selectBox, label} = createElements(currentCategoryGroupId, className);
     createOptions(selectBox, categoryGroups, paramCategoryId);
-    addChangeEvent(selectBox, parentElement, className);
+    selectBox.addEventListener("change", () => {
+        const categoryGroups = replaceCategoryGroups(parentElement, className);
+        selectCategoryGroupId(parentElement, className, categoryGroups);
+    });
     div.append(label, selectBox);
     parentElement.append(div);
 }
 
-
 /** div, selectBox, label Element 생성 */
 function createElements (currentCategoryGroupId, className) {
-  const div = document.createElement("div");
-  const label = document.createElement("label");
-  label.htmlFor = currentCategoryGroupId;
-  label.innerText = categoryGroupMap[currentCategoryGroupId].name;
-  const selectBox = document.createElement("select");
-  selectBox.className = className || ".sel";
-  selectBox.id = currentCategoryGroupId;
-  return {div, selectBox, label};
+    const div = document.createElement("div");
+    div.className = "draggable";
+    div.draggable = true;
+    const label = document.createElement("label");
+    label.htmlFor = currentCategoryGroupId;
+    label.innerText = categoryGroupMap[currentCategoryGroupId].name;
+    const selectBox = document.createElement("select");
+    selectBox.className = className || ".sel";
+    selectBox.id = currentCategoryGroupId;
+    return {div, selectBox, label};
 }
 
 function createOptions(selectBox, categoryGroups, paramCategoryId) {
@@ -534,7 +671,6 @@ function createOptions(selectBox, categoryGroups, paramCategoryId) {
         let option = document.createElement("option");
         option.value = id;
         option.innerText = name;
-        console.log(id, paramCategoryId);
         if(id == paramCategoryId) {
             option.selected = true;
         }
@@ -542,25 +678,211 @@ function createOptions(selectBox, categoryGroups, paramCategoryId) {
     }  
 }
 
-/**
- * selectBox의 onChange 이벤트 생성 및 처리
- * @param {Element} selectBox 이벤트가 생성될 selectBox Element
- * @param {Element} parentElement 최상위 Element
- * @param {String} className selectBox의 class 명
- */
-function addChangeEvent(selectBox, parentElement, className) {
-    selectBox.addEventListener("change", () => {
-        const arr = findSelectedOption(className);
-        parentElement.replaceChildren();
-        makeCategory(parentElement, className, arr);
+
+function addDraggable(parentElement, className) {
+    const draggables = document.querySelectorAll(".draggable");
+
+    let beforeId;
+    let afterId;
+
+    draggables.forEach((draggable, index) => {
+        draggable.addEventListener("dragstart", (e) => {
+            beforeId = findCurrentCategoryGroup(className);
+            draggable.classList.add("dragging");
+        });
+
+        draggable.addEventListener("dragend", (e) => {
+            // relaction update 호출
+            afterId = findCurrentCategoryGroup(className);
+            relactionUpdate(beforeId, afterId);
+            draggable.classList.remove("dragging");
+        });
+    });
+
+    parentElement.addEventListener("dragover", e => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(parentElement, e.clientX);
+        const draggable = document.querySelector(".dragging");
+        if (afterElement === undefined) {
+            parentElement.appendChild(draggable);
+        } else {
+            parentElement.insertBefore(draggable, afterElement);
+        }
     });
 }
 
-function findSelectedOption(className) {
-    const element = document.querySelectorAll(`.${className} option:checked`);
+function getDragAfterElement(container, x) {
+    const draggableElements = [
+        ...container.querySelectorAll(".draggable:not(.dragging)"),
+    ];
+
+    return draggableElements.reduce(
+        (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = x - box.left - box.width / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        },
+        { offset: Number.NEGATIVE_INFINITY },
+    ).element;
+}
+
+function findCurrentCategoryGroup(className) {
     const arr = [];
+    const element = document.querySelectorAll(`.${className}`);
     element.forEach(item => {
-        arr.push(item.value);
+        arr.push(item.id);
     });
+
     return arr;
+}
+
+function relactionUpdate(beforeGroups, afterGroups) {
+
+    const diff = [];
+    for (let i = 0; i < beforeGroups.length; i++) {
+        if(beforeGroups[i] !== afterGroups[i]) {
+            diff.push(afterGroups[i]);
+        }
+    }
+
+    const preGroup = categoryGroupMap[diff[0]];
+    const postGroup = categoryGroupMap[diff[1]];
+
+
+    replaceRelationsInfo(preGroup, postGroup);
+    const newRelation = generateRelationTree();
+    console.log(newRelation);
+}
+
+function replaceRelationsInfo(preGroup, postGroup) {
+    console.log(preGroup.id, postGroup.id);
+    for (let index = 0; index < relations.length; index++) {
+        const categoryGroup = categoryGroupMap[relations[index].categoryGroupId];
+
+        if(preGroup.id === relations[index].categoryGroupId) {
+            console.log(postGroup.id, relations[index]);
+            relations[index].categoryGroupId = postGroup.id;
+
+            for (let i = 0; i < categoryGroup.categories.length; i++) {
+                if(categoryGroup.categories[i].id === relations[index].categoryId) {
+                    if(i < postGroup.categories.length) {
+                        relations[index].categoryId = postGroup.categories[i].id;
+                    } else {
+                        console.log(categoryGroup.categories[i].id);
+                        relations.splice(index, 1);
+                    }
+                }
+            }
+        } else if(postGroup.id === relations[index].categoryGroupId) {
+            relations[index].categoryGroupId = preGroup.id;
+
+            for (let i = 0; i < categoryGroup.categories.length; i++) {
+                if(categoryGroup.categories[i].id === relations[index].categoryId) {
+                    if(i < preGroup.categories.length) {
+                        relations[index].categoryId = preGroup.categories[i].id;
+                    } else {
+                        console.log(categoryGroup.categories, preGroup.categories)
+                        relations.splice(index, 1);
+                    }
+                }
+            }
+        }
+    }
+}
+
+function replaceCategoryGroups(parentElement, className) {
+    const element = document.querySelectorAll(`.${className} option:checked`);
+    const result = {
+        categories : [],
+        categoryGroups : []
+    }
+    element.forEach((item, index) => {
+        result.categories.push(item.value);
+        result.categoryGroups.push(document.querySelectorAll(`.${className}`)[index].id);
+    });
+    parentElement.replaceChildren();
+    makeCategory(parentElement, className, result.categories);
+    return result.categoryGroups;
+}
+
+
+function selectCategoryGroupId(parentElement, className, categoryGroups) {
+    categoryGroups.forEach(categoryGroupId => {
+        asyncLoadCategories(categoryGroupId).then(categories => {
+            if(categories) {
+                changeCategories(parentElement, className, categoryGroupId, categories);
+            }
+        }).catch(err => {
+            console.error(categoryGroupId, err);
+        });
+    });
+}
+
+
+
+
+
+function changeCategories(parentElement, className, categoryGroupId, categories) {
+    if(categoryGroupMap[categoryGroupId]) {
+        categoryGroupMap[categoryGroupId].categories = categories;
+
+        changeCategoryRelations(relationTree, categoryGroupId);
+
+        chagneCategoryElement(parentElement, className, categoryGroupId, categories);
+    }
+}
+
+function changeCategoryRelations(obj, categoryGroupId) {
+    if(obj.categoryGroupId == categoryGroupId) {
+        if(Object.keys(obj.categories).length < categoryGroupMap[categoryGroupId].categories.length) {
+            for (const category of categoryGroupMap[categoryGroupId].categories) {
+                if(!obj.categories[category.id]) {
+                    obj.categories[category.id] = {
+                        categories : {
+                            [defaultCategorySymbol] : {}
+                        }
+                    }
+                }
+            }
+        } else {
+            let count = 0;
+            for (const key in obj.categories) {
+                if(categoryGroupMap[categoryGroupId].categories.length <= count) {
+                    delete obj.categories[key];
+                }
+                ++count;
+            }
+        }
+        return;
+    }
+    for (const key in obj.categories) {
+        changeCategoryRelations(obj.categories[key], categoryGroupId);
+    }
+}
+
+function chagneCategoryElement(parentElement, className, categoryGroupId, categories) {
+    const categoryElement = document.getElementById(categoryGroupId);
+    if(categoryElement) {
+        const bool =  categories.length < categoryElement.children.length;
+        const leng = bool ? categoryElement.children.length : categories.length;
+        for (let i = 0; i < leng; i++) {
+            if(bool) {
+                if(categories.length <= i) {
+                    categoryElement.removeChild(categoryElement.children[i]);
+                }
+            } else {
+                if(i === categoryElement.children.length) {
+                    const option = document.createElement('option');
+                    option.value = categories[i].id;
+                    option.innerText = categories[i].name;
+                    categoryElement.appendChild(option);
+                }
+            }
+        }
+        bool && replaceCategoryGroups(parentElement, className);
+    }
 }

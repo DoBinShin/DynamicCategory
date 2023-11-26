@@ -26,6 +26,9 @@
         #user div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
         section {margin-bottom: 50px;}
         button {max-height: 50px;}
+        .draggable.dragging {
+            opacity: 0.5;
+        }
   </style>
   <script src="./common.js"></script>
 </head>
@@ -45,7 +48,7 @@
                 makeCategory(parentElement, className, defaultCategories);
 
                 document.getElementById(buttonName).addEventListener("click", ()=> {
-                    const arr = findSelectedOption(className);
+                    const arr = replaceCategoryGroups(parentElement, className);
                     localStorage.setItem("defaultCategories", JSON.stringify(arr));
                 });
             }
