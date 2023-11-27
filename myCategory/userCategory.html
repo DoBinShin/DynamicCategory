@@ -39,6 +39,8 @@
             userView(document.getElementById("user"), "selUser");
             function userView(parentElement, className) {
                 const defaultCategories = localStorage.getItem("defaultCategories") != null ? JSON.parse(localStorage.getItem("defaultCategories")) : undefined;
+                relations = localStorage.getItem("relations") != null ? JSON.parse(localStorage.getItem("relations")) : relations;
+                relationTree = generateRelationTree(relations);
                 makeCategory(parentElement, className, defaultCategories);
             }
         })();

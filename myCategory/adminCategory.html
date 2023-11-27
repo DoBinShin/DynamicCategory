@@ -22,12 +22,21 @@
             display: flex; 
             justify-content : flex-start;
         }
-        #admin div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
         #user div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
         section {margin-bottom: 50px;}
         button {max-height: 50px;}
         .draggable.dragging {
-            opacity: 0.5;
+            opacity: .5;
+            border: 2px dashed red;
+        }
+        .draggable {
+            display: flex;
+            align-items: center;
+            margin: 10px;
+            border: 1px solid #ccc;
+            background-color: white;
+            box-sizing: border-box;
+            cursor: move;
         }
   </style>
   <script src="./common.js"></script>
@@ -45,6 +54,8 @@
             /** param : parentElement, selectBox-className, save-button-idName */
             function adminDefaultSetting(parentElement, className, buttonName) {
                 const defaultCategories = localStorage.getItem("defaultCategories") != null ? JSON.parse(localStorage.getItem("defaultCategories")) : undefined;
+                relations = localStorage.getItem("relations") != null ? JSON.parse(localStorage.getItem("relations")) : relations;
+                relationTree = generateRelationTree(relations);
                 makeCategory(parentElement, className, defaultCategories);
 
                 document.getElementById(buttonName).addEventListener("click", ()=> {

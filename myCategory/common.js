@@ -1,4 +1,4 @@
-const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree, relations} = (function() {
+let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree, relations} = (function() {
     let defaultCategorySymbol = Symbol('default');
 
     let loadCategoryGroups = function() {
@@ -454,7 +454,7 @@ const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, gener
 
     let relations = loadRelations();
 
-    let generateRelationTree = function() {
+    let generateRelationTree = function(relations) {
         let relationTree = {
             categoryGroupId: relations[0].categoryGroupId,
             categories: {}
@@ -478,7 +478,7 @@ const {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, gener
 
         return relationTree;
     };
-    let relationTree = generateRelationTree();
+    let relationTree = generateRelationTree(relations);
 
     return {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generateRelationTree, relations};
     
@@ -603,7 +603,7 @@ let asyncLoadCategories = function(categoryGroupId) {
  * @param {Number} index data Array의 index에 접근할 변수, default = 0
  * @param {Object} obj relationTree
  */
-function makeCategory(parentElement = document.body, className = ".sel",  data = [], index = 0, obj = relationTree) {
+function makeCategory(parentElement = document.body, className = ".sel",  data = [], obj = relationTree, index = 0) {
 
     if(!data.length) {
         makeDefaultCategory(obj, data);
@@ -612,14 +612,20 @@ function makeCategory(parentElement = document.body, className = ".sel",  data =
     if(obj.categoryGroupId) {
         const categoryGroups = categoryGroupMap[obj.categoryGroupId];
         const paramCategoryId = data[index];
-        const categories = obj.categories[paramCategoryId] ||
+        const relation = obj.categories[paramCategoryId] ||
             obj.categories[Object.keys(obj.categories)[0]] ||
             obj.categories[defaultCategorySymbol];
 
+        for (const key in categoryGroups.categories) {
+            if(categoryGroups.categories[key].option) {
+                console.log(categoryGroups.categories[key].option);
+            }
+        }
+
         createCategory(categoryGroups.categories, obj.categoryGroupId, paramCategoryId, parentElement, className);
 
-        if(0 < Object.keys(categories).length) {
-            makeCategory(parentElement, className, data, ++index, categories);
+        if(0 < Object.keys(relation).length) {
+            makeCategory(parentElement, className, data, relation, ++index);
         } else {
             addDraggable(parentElement, className);
         }
@@ -684,17 +690,30 @@ function addDraggable(parentElement, className) {
 
     let beforeId;
     let afterId;
+    let afterEl;
+    let beforeEl;
 
     draggables.forEach((draggable, index) => {
         draggable.addEventListener("dragstart", (e) => {
+            draggalbeIndex = index;
             beforeId = findCurrentCategoryGroup(className);
             draggable.classList.add("dragging");
         });
 
         draggable.addEventListener("dragend", (e) => {
+
             // relaction update 호출
             afterId = findCurrentCategoryGroup(className);
-            relactionUpdate(beforeId, afterId);
+
+            const diff = [];
+            for (let i = 0; i < beforeId.length; i++) {
+                if(beforeId[i] !== afterId[i]) {
+                    diff.push(afterId[i]);
+                }
+            }
+            if(diff.length) {
+                relactionUpdate(diff[0], diff[1]);
+            }
             draggable.classList.remove("dragging");
         });
     });
@@ -736,35 +755,24 @@ function findCurrentCategoryGroup(className) {
     element.forEach(item => {
         arr.push(item.id);
     });
-
     return arr;
 }
 
-function relactionUpdate(beforeGroups, afterGroups) {
+function relactionUpdate(beforeId, afterId) {
 
-    const diff = [];
-    for (let i = 0; i < beforeGroups.length; i++) {
-        if(beforeGroups[i] !== afterGroups[i]) {
-            diff.push(afterGroups[i]);
-        }
-    }
-
-    const preGroup = categoryGroupMap[diff[0]];
-    const postGroup = categoryGroupMap[diff[1]];
+    const preGroup = categoryGroupMap[beforeId];
+    const postGroup = categoryGroupMap[afterId];
 
 
-    replaceRelationsInfo(preGroup, postGroup);
-    const newRelation = generateRelationTree();
-    console.log(newRelation);
+    const newRelations = replaceRelationsInfo(preGroup, postGroup);
+    localStorage.setItem("relations", JSON.stringify(newRelations));
 }
 
 function replaceRelationsInfo(preGroup, postGroup) {
-    console.log(preGroup.id, postGroup.id);
     for (let index = 0; index < relations.length; index++) {
         const categoryGroup = categoryGroupMap[relations[index].categoryGroupId];
 
         if(preGroup.id === relations[index].categoryGroupId) {
-            console.log(postGroup.id, relations[index]);
             relations[index].categoryGroupId = postGroup.id;
 
             for (let i = 0; i < categoryGroup.categories.length; i++) {
@@ -772,7 +780,6 @@ function replaceRelationsInfo(preGroup, postGroup) {
                     if(i < postGroup.categories.length) {
                         relations[index].categoryId = postGroup.categories[i].id;
                     } else {
-                        console.log(categoryGroup.categories[i].id);
                         relations.splice(index, 1);
                     }
                 }
@@ -785,13 +792,14 @@ function replaceRelationsInfo(preGroup, postGroup) {
                     if(i < preGroup.categories.length) {
                         relations[index].categoryId = preGroup.categories[i].id;
                     } else {
-                        console.log(categoryGroup.categories, preGroup.categories)
                         relations.splice(index, 1);
                     }
                 }
             }
         }
     }
+
+    return relations;
 }
 
 function replaceCategoryGroups(parentElement, className) {
@@ -828,17 +836,26 @@ function selectCategoryGroupId(parentElement, className, categoryGroups) {
 
 function changeCategories(parentElement, className, categoryGroupId, categories) {
     if(categoryGroupMap[categoryGroupId]) {
+        let bool = categories.length < categoryGroupMap[categoryGroupId].categories.length;
         categoryGroupMap[categoryGroupId].categories = categories;
 
-        changeCategoryRelations(relationTree, categoryGroupId);
+        changeCategoryRelations(relationTree, categoryGroupId, bool);
 
-        chagneCategoryElement(parentElement, className, categoryGroupId, categories);
+        chagneCategoryElement(parentElement, className, categoryGroupId, categories, bool);
     }
 }
 
-function changeCategoryRelations(obj, categoryGroupId) {
+function changeCategoryRelations(obj, categoryGroupId, bool) {
     if(obj.categoryGroupId == categoryGroupId) {
-        if(Object.keys(obj.categories).length < categoryGroupMap[categoryGroupId].categories.length) {
+        if(bool) {
+            let count = 0;
+            for (const key in obj.categories) {
+                if(categoryGroupMap[categoryGroupId].categories.length <= count) {
+                    delete obj.categories[key];
+                }
+                ++count;
+            }
+        } else {
             for (const category of categoryGroupMap[categoryGroupId].categories) {
                 if(!obj.categories[category.id]) {
                     obj.categories[category.id] = {
@@ -848,19 +865,11 @@ function changeCategoryRelations(obj, categoryGroupId) {
                     }
                 }
             }
-        } else {
-            let count = 0;
-            for (const key in obj.categories) {
-                if(categoryGroupMap[categoryGroupId].categories.length <= count) {
-                    delete obj.categories[key];
-                }
-                ++count;
-            }
         }
         return;
     }
     for (const key in obj.categories) {
-        changeCategoryRelations(obj.categories[key], categoryGroupId);
+        changeCategoryRelations(obj.categories[key], categoryGroupId, bool);
     }
 }
 
