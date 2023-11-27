@@ -198,6 +198,17 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
         ];
     };
 
+    let loadOptions = function() {
+        return [
+            {
+                id : 1,
+                option : '<',
+                target : 36,
+                categoryId : 33
+            }
+        ];
+    }
+
     let loadRelations = function() {
         return [
             {
@@ -616,13 +627,7 @@ function makeCategory(parentElement = document.body, className = ".sel",  data =
             obj.categories[Object.keys(obj.categories)[0]] ||
             obj.categories[defaultCategorySymbol];
 
-        for (const key in categoryGroups.categories) {
-            if(categoryGroups.categories[key].option) {
-                console.log(categoryGroups.categories[key].option);
-            }
-        }
-
-        createCategory(categoryGroups.categories, obj.categoryGroupId, paramCategoryId, parentElement, className);
+        createCategory(categoryGroups.categories, obj.categoryGroupId, paramCategoryId, parentElement, className, data);
 
         if(0 < Object.keys(relation).length) {
             makeCategory(parentElement, className, data, relation, ++index);
@@ -646,9 +651,9 @@ function makeDefaultCategory(obj, arr) {
     }
 }
 
-function createCategory(categoryGroups, currentCategoryGroupId, paramCategoryId, parentElement, className) {
+function createCategory(categoryGroups, currentCategoryGroupId, paramCategoryId, parentElement, className, param) {
     const {div, selectBox, label} = createElements(currentCategoryGroupId, className);
-    createOptions(selectBox, categoryGroups, paramCategoryId);
+    createOptions(selectBox, categoryGroups, paramCategoryId, param);
     selectBox.addEventListener("change", () => {
         const categoryGroups = replaceCategoryGroups(parentElement, className);
         selectCategoryGroupId(parentElement, className, categoryGroups);
@@ -671,17 +676,44 @@ function createElements (currentCategoryGroupId, className) {
     return {div, selectBox, label};
 }
 
-function createOptions(selectBox, categoryGroups, paramCategoryId) {
+function createOptions(selectBox, categoryGroups, paramCategoryId, param) {
     for (const key in categoryGroups) {
-        const {id, name} = categoryGroups[key];
-        let option = document.createElement("option");
-        option.value = id;
-        option.innerText = name;
-        if(id == paramCategoryId) {
-            option.selected = true;
+        const {id, name, option, target} = categoryGroups[key];
+
+        if(option) {
+            const matched = matchCategoryOption(option, target, param);
+            if(matched) {
+                continue;
+            }
         }
-        selectBox.append(option);
+        let options = document.createElement("option");
+        options.value = id;
+        options.innerText = name;
+        if(id == paramCategoryId) {
+            options.selected = true;
+        }
+        selectBox.append(options);
     }  
+}
+
+function matchCategoryOption(option, target, param) {
+    for (const categoryId of param) {
+        switch (option) {
+            case '<' :
+                if(target < categoryId) return true;
+                break;
+            case '>' :
+                if(target > categoryId) return true;
+                break;
+            case 'in' :
+                if(param.includes(target)) return true;
+                break;
+            default :
+                if(target == categoryId) return true;
+                break;
+        }
+    }
+    return false;
 }
 
 
@@ -690,12 +722,9 @@ function addDraggable(parentElement, className) {
 
     let beforeId;
     let afterId;
-    let afterEl;
-    let beforeEl;
 
     draggables.forEach((draggable, index) => {
         draggable.addEventListener("dragstart", (e) => {
-            draggalbeIndex = index;
             beforeId = findCurrentCategoryGroup(className);
             draggable.classList.add("dragging");
         });
