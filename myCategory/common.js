@@ -471,6 +471,7 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
             categories: {}
         };
         let prevRelationgroupId=0;
+        let prevRelation = undefined;
         let current = undefined;
 
         relations.forEach(relation=>{
@@ -480,8 +481,26 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
             } else if(prevRelationgroupId!=relation.relationGroupId) { // 끝났음
                 current = relationTree;
                 prevRelationgroupId = relation.relationGroupId;
+                prevRelation = relation;
             }
 
+            console.log(prevRelation, current);
+
+            let bool = false;
+            // switch (prevRelation.operator) {
+            //     case '<' :
+            //         if(prevRelation.values[0] < relation.values) bool =  true;
+            //         break;
+            //     case '>' :
+            //         if(prevRelation.values[0] > relation.values) bool = true;
+            //         break;
+            //     case 'in' :
+            //         if(prevRelation.values.includes(relation.values)) bool = true;
+            //         break;
+            //     default :
+            //         if(prevRelation.values[0] == relation.values[0]) bool = true;
+            //         break;
+            // }
             let categoryId = relation.categoryId || defaultCategorySymbol;
             current.categories[categoryId] = current.categories[categoryId] || {};
             current = current.categories[categoryId];
@@ -497,34 +516,43 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
 
 let toggle = false;
 let asyncLoadCategories = function(categoryGroupId) {
-    return new Promise((resolve, reject) => {
-        if(categoryGroupId == 2) {
-            toggle = !toggle;
-            setTimeout(()=>{
-                if(toggle) {
-                     resolve([
-                        { id: 4,
+    toggle = !toggle;
+    if(categoryGroupId == 2) {
+        if(toggle) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve([
+                        {
+                            id: 4,
                             name: 'BE',
                             categoryGroupId: 2,
                         },
-                        { id: 5,
+                        {
+                            id: 5,
                             name: 'FE',
                             categoryGroupId: 2,
                         },
-                        { id: 6,
+                        {
+                            id: 6,
                             name: 'ME',
                             categoryGroupId: 2,
                         },
-                        { id: 7,
+                        {
+                            id: 7,
                             name: 'UI',
                             categoryGroupId: 2,
                         },
-                        { id: 10007,
+                        {
+                            id: 10007,
                             name: 'DESIGN',
                             categoryGroupId: 2,
                         }
                     ]);
-                } else {
+                }, 5000);
+            });
+        } else {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
                      resolve([
                         { id: 4,
                             name: 'BE',
@@ -543,12 +571,13 @@ let asyncLoadCategories = function(categoryGroupId) {
                             categoryGroupId: 2,
                         }
                     ]);
-                }
-            }, 2000);
+                }, 5000);
+            });
         }
-        else if(categoryGroupId == 5) {
-            setTimeout(() => {
-                if(toggle) {
+    } else if(categoryGroupId == 5) {
+        if (toggle) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
                     resolve([
                         {
                             id: 14,
@@ -576,7 +605,11 @@ let asyncLoadCategories = function(categoryGroupId) {
                             categoryGroupId: 5,
                         }
                     ]);
-                } else {
+                }, 3000);
+            });
+        } else {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
                     resolve([
                         {
                             id: 14,
@@ -599,12 +632,20 @@ let asyncLoadCategories = function(categoryGroupId) {
                             categoryGroupId: 5,
                         },
                     ]);
-                }
-            }, 3000);
+                }, 3000);
+            });
         }
-    });
+    } else {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                resolve(undefined);
+            }, 0);
+        });
+    }
 };
 
+
+let globalFlag = true;
 
 /**
  * 카테고리 생성 메서드
@@ -654,10 +695,19 @@ function makeDefaultCategory(obj, arr) {
 function createCategory(categoryGroups, currentCategoryGroupId, paramCategoryId, parentElement, className, param) {
     const {div, selectBox, label} = createElements(currentCategoryGroupId, className);
     createOptions(selectBox, categoryGroups, paramCategoryId, param);
-    selectBox.addEventListener("change", () => {
-        const categoryGroups = replaceCategoryGroups(parentElement, className);
-        selectCategoryGroupId(parentElement, className, categoryGroups);
-    });
+    if(globalFlag) {
+        selectBox.addEventListener("change", () => {
+            console.log("발생", currentCategoryGroupId);
+            globalFlag = false;
+            document.querySelectorAll(`.${className}`).forEach(item => {
+                item.removeEventListener("change", () => {
+                    console.log("제거");
+                });
+            });
+            const categoryGroups = replaceCategoryGroups(parentElement, className);
+            selectCategoryGroupId(parentElement, className, categoryGroups);
+        });
+    }
     div.append(label, selectBox);
     parentElement.append(div);
 }
@@ -848,15 +898,38 @@ function replaceCategoryGroups(parentElement, className) {
 
 
 function selectCategoryGroupId(parentElement, className, categoryGroups) {
+
+    const arr = [];
     categoryGroups.forEach(categoryGroupId => {
-        asyncLoadCategories(categoryGroupId).then(categories => {
-            if(categories) {
-                changeCategories(parentElement, className, categoryGroupId, categories);
-            }
-        }).catch(err => {
-            console.error(categoryGroupId, err);
-        });
+        arr.push(asyncLoadCategories(categoryGroupId));
+
     });
+    Promise.all(arr).then(categories => {
+        if(categories.length) {
+            globalFlag = true;
+            console.log("응답", categories);
+            document.querySelectorAll(`.${className}`).forEach(item=> {
+                item.addEventListener("change", () => {
+                    globalFlag = false;
+                    document.querySelectorAll(`.${className}`).forEach(item => {
+                        item.removeEventListener("change", () => {
+                            console.log("제거");
+                        });
+                    });
+                    const categoryGroups = replaceCategoryGroups(parentElement, className);
+                    selectCategoryGroupId(parentElement, className, categoryGroups);
+                });
+            });
+
+            for (let i = 0; i < categories.length; i++) {
+                if(categories[i]) {
+                    changeCategories(parentElement, className, arr[i], categories[i]);
+                }
+            }
+        }
+    }).catch(err => {
+        console.error(err);
+    });;
 }
 
 
@@ -902,10 +975,9 @@ function changeCategoryRelations(obj, categoryGroupId, bool) {
     }
 }
 
-function chagneCategoryElement(parentElement, className, categoryGroupId, categories) {
+function chagneCategoryElement(parentElement, className, categoryGroupId, categories, bool) {
     const categoryElement = document.getElementById(categoryGroupId);
     if(categoryElement) {
-        const bool =  categories.length < categoryElement.children.length;
         const leng = bool ? categoryElement.children.length : categories.length;
         for (let i = 0; i < leng; i++) {
             if(bool) {
