@@ -543,6 +543,8 @@
         }
       };
 
+    
+
       categoryGroups.forEach(categoryGroup=>(categoryGroupMap[categoryGroup.id] = categoryGroup));
       categories.forEach(category=>(categoryMap[category.id] = category));
 
@@ -578,6 +580,7 @@
       let getNextRelation = (function() {
         let operatorMap = {
           '=': (valuesString, value)=>{
+            console.log(value);
             let result = (',' + valuesString + ',').startsWith(',' + value + ',');
             console.log('=', valuesString, value, result);
             return result;
@@ -605,7 +608,7 @@
               let result = /(.*?)\|(.*?)\|(.*)/.exec(key);
 
               if(result) {
-                if(operatorMap[result[1]](result[3], categoryMap[categoryId][result[2]])) {
+                if(operatorMap[result[1]](result[3], categoryMap[categoryId] && categoryMap[categoryId][result[2]])) {
                   return relation.categories[key];
                 }
               }
@@ -614,19 +617,53 @@
         };
       })();
 
+
+      function GetNextCon() {
+        this["="] = function (valuesString, value){
+          console.log(valuesString, value);
+        };
+        this["<"] = function (valuesString, value){
+          console.log(valuesString, value);
+        };
+        this[">"] = function (valuesString, value){
+          console.log(valuesString, value);
+        };
+        this["in"] = function (valuesString, value){
+          console.log(valuesString, value);
+        };
+
+        this.getNext = function (relation, categoryId) {
+          if(categoryId) {
+            for(let key in relation.categories) {
+              let result = /(.*?)\|(.*?)\|(.*)/.exec(key);
+
+              if(result) {
+                if(this[result[1]](result[3], categoryMap[categoryId] && categoryMap[categoryId][this[result[2]]])) {
+                  return relation.categories[key];
+                }
+              }
+            }
+          }
+        }
+
+        return this;
+      }
+
+
+      const getNexts = new GetNextCon();
+
+      console.log(getNexts["="]("abc","bbb"));
+
       let f = function (currentRelation, defaultCategoryIdList) {
         if(0<Object.keys(currentRelation).length) {
           locker.lock();
           let defaultCategoryId = defaultCategoryIdList.shift();
           asyncLoadCategoryGroup(currentRelation.categoryGroupId).then(categoryGroup=>{
-            let nextRelation = 
-              getNextRelation(currentRelation, defaultCategoryId) || 
-              getNextRelation(currentRelation, categoryGroup.categories[0].id) || 
+            let nextRelation =
+                    getNextRelation(currentRelation, defaultCategoryId) ||
+                    getNextRelation(currentRelation, categoryGroup.categories[0].id) ||
               currentRelation.categories[defaultCategorySymbol];
-
-            if(!nextRelation) debugger;
             createSelectTag(categoryGroup, defaultCategoryId, currentRelation, defaultCategoryIdList);
-
             f(nextRelation, defaultCategoryIdList);
           })
         } else {
@@ -642,7 +679,7 @@
         html+=`<label>${categoryGroup.name}</label>`;
         html+=`<select>`;
         categoryGroup.categories.forEach(category=>{
-          let selected = (category.id===defaultCategoryId)? 'selected':'';
+                                                  let selected = (category.id===defaultCategoryId)? 'selected':'';
           html+=`  <option value=${category.id} ${selected}>${category.name}</option>`;
         });
         html+=`</select>`;
@@ -660,9 +697,11 @@
           }
 
           let nextRelation = 
-            getNextRelation(currentRelation, e.currentTarget.value) || 
+            getNextRelation(currentRelation, e.currentTarget.value) ||
             currentRelation.categories[defaultCategorySymbol];
-          f(nextRelation, defaultCategoryIdList);
+          if(nextRelation) {
+            f(nextRelation, defaultCategoryIdList);
+          }
         });
         
         document.getElementById('container').appendChild(div);

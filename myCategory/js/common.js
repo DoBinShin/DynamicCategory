@@ -446,16 +446,16 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
 
     for(let key in categoryMap) {
         
-    // row data 하나를 추출
-    let category = categoryMap[key];  
-    // row의 카테고리 그룹id로 카테고리 정보를 추출
-    let categoryGroup = categoryGroupMap[category.categoryGroupId];
+        // row data 하나를 추출
+        let category = categoryMap[key];  
+        // row의 카테고리 그룹id로 카테고리 정보를 추출
+        let categoryGroup = categoryGroupMap[category.categoryGroupId];
 
-    // 현재 row에 categoryGroup 프로퍼티에 카테고리 정보를 넣어줌
-    category.categoryGroup = categoryGroup;
-    // 현재 카테고리 정보에 row data를 넣어줌 (만약 이전 data가 없으면 빈 배열을 넣어줌)
-    categoryGroup.categories = categoryGroup.categories || [];
-    categoryGroup.categories.push(category);  // 카테고리 정보엔 자신의 row데이터가 array 형태로 저장 됨
+        // 현재 row에 categoryGroup 프로퍼티에 카테고리 정보를 넣어줌
+        category.categoryGroup = categoryGroup;
+        // 현재 카테고리 정보에 row data를 넣어줌 (만약 이전 data가 없으면 빈 배열을 넣어줌)
+        categoryGroup.categories = categoryGroup.categories || [];
+        categoryGroup.categories.push(category);  // 카테고리 정보엔 자신의 row데이터가 array 형태로 저장 됨
     }
 
     // console.log(categoryMap);
@@ -484,23 +484,6 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
                 prevRelation = relation;
             }
 
-            console.log(prevRelation, current);
-
-            let bool = false;
-            // switch (prevRelation.operator) {
-            //     case '<' :
-            //         if(prevRelation.values[0] < relation.values) bool =  true;
-            //         break;
-            //     case '>' :
-            //         if(prevRelation.values[0] > relation.values) bool = true;
-            //         break;
-            //     case 'in' :
-            //         if(prevRelation.values.includes(relation.values)) bool = true;
-            //         break;
-            //     default :
-            //         if(prevRelation.values[0] == relation.values[0]) bool = true;
-            //         break;
-            // }
             let categoryId = relation.categoryId || defaultCategorySymbol;
             current.categories[categoryId] = current.categories[categoryId] || {};
             current = current.categories[categoryId];
@@ -697,15 +680,13 @@ function createCategory(categoryGroups, currentCategoryGroupId, paramCategoryId,
     createOptions(selectBox, categoryGroups, paramCategoryId, param);
     if(globalFlag) {
         selectBox.addEventListener("change", () => {
-            console.log("발생", currentCategoryGroupId);
             globalFlag = false;
             document.querySelectorAll(`.${className}`).forEach(item => {
                 item.removeEventListener("change", () => {
                     console.log("제거");
                 });
             });
-            const categoryGroups = replaceCategoryGroups(parentElement, className);
-            selectCategoryGroupId(parentElement, className, categoryGroups);
+            replaceCurrentCategoryGroups(parentElement, className);
         });
     }
     div.append(label, selectBox);
@@ -764,6 +745,13 @@ function matchCategoryOption(option, target, param) {
         }
     }
     return false;
+}
+
+function replaceCurrentCategoryGroups(parentElement, className) {
+    const {categories, categoryGroups} = findCurrentCategoryInfos(parentElement, className);
+    parentElement.replaceChildren();
+    makeCategory(parentElement, className, categories);
+    selectCategoryGroupId(parentElement, className, categoryGroups);
 }
 
 
@@ -881,7 +869,7 @@ function replaceRelationsInfo(preGroup, postGroup) {
     return relations;
 }
 
-function replaceCategoryGroups(parentElement, className) {
+function findCurrentCategoryInfos(parentElement, className) {
     const element = document.querySelectorAll(`.${className} option:checked`);
     const result = {
         categories : [],
@@ -891,9 +879,7 @@ function replaceCategoryGroups(parentElement, className) {
         result.categories.push(item.value);
         result.categoryGroups.push(document.querySelectorAll(`.${className}`)[index].id);
     });
-    parentElement.replaceChildren();
-    makeCategory(parentElement, className, result.categories);
-    return result.categoryGroups;
+    return result;
 }
 
 
@@ -916,8 +902,7 @@ function selectCategoryGroupId(parentElement, className, categoryGroups) {
                             console.log("제거");
                         });
                     });
-                    const categoryGroups = replaceCategoryGroups(parentElement, className);
-                    selectCategoryGroupId(parentElement, className, categoryGroups);
+                    replaceCurrentCategoryGroups(parentElement, className);
                 });
             });
 
@@ -993,6 +978,6 @@ function chagneCategoryElement(parentElement, className, categoryGroupId, catego
                 }
             }
         }
-        bool && replaceCategoryGroups(parentElement, className);
+        bool && replaceCurrentCategoryGroups(parentElement, className)
     }
 }

@@ -1,0 +1,278 @@
+
+[
+      {
+      "relationGroupId": 1,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "1"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 1,
+      "order": 2,
+      "categoryGroupId": 2,
+      "values": [
+            "4"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 1,
+      "order": 3,
+      "categoryGroupId": 5,
+      "values": [
+            "14"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 1,
+      "order": 4,
+      "categoryGroupId": 11,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 2,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "1"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 2,
+      "order": 2,
+      "categoryGroupId": 2,
+      "values": [
+            "4"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 2,
+      "order": 3,
+      "categoryGroupId": 5,
+      "values": [
+            "15"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 2,
+      "order": 4,
+      "categoryGroupId": 10,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 3,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "1"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 3,
+      "order": 2,
+      "categoryGroupId": 2,
+      "values": [
+            "4"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 3,
+      "order": 3,
+      "categoryGroupId": 5,
+      "values": [
+            "D",
+            "C#"
+      ],
+      "operator": "in",
+      "valueType": "name"
+      },
+      {
+      "relationGroupId": 3,
+      "order": 4,
+      "categoryGroupId": 7,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 5,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "1"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 5,
+      "order": 2,
+      "categoryGroupId": 2,
+      "values": [
+            "5"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 5,
+      "order": 3,
+      "categoryGroupId": 6,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 5,
+      "order": 4,
+      "categoryGroupId": 8,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 5,
+      "order": 5,
+      "categoryGroupId": 7,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 6,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "1"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 6,
+      "order": 2,
+      "categoryGroupId": 2,
+      "values": [
+            "6"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 6,
+      "order": 3,
+      "categoryGroupId": 8,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 6,
+      "order": 4,
+      "categoryGroupId": 9,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 7,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "1"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 7,
+      "order": 2,
+      "categoryGroupId": 2,
+      "values": [
+            "7"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 7,
+      "order": 3,
+      "categoryGroupId": 8,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 8,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "2"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 8,
+      "order": 1,
+      "categoryGroupId": 3,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 8,
+      "order": 2,
+      "categoryGroupId": 8,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 9,
+      "order": 1,
+      "categoryGroupId": 1,
+      "values": [
+            "3"
+      ],
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 9,
+      "order": 2,
+      "categoryGroupId": 4,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      },
+      {
+      "relationGroupId": 9,
+      "order": 3,
+      "categoryGroupId": 8,
+      "values": null,
+      "operator": "=",
+      "valueType": "id"
+      }
+]

@@ -1,0 +1,53 @@
+{
+     "2": {
+         "true": [
+             {
+                 "id": 4,
+                 "name": "BE",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 5,
+                 "name": "FE",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 6,
+                 "name": "ME",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 7,
+                 "name": "UI",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 10007,
+                 "name": "DESIGN",
+                 "categoryGroupId": 2
+             }
+         ],
+         "false": [
+             {
+                 "id": 4,
+                 "name": "BE",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 5,
+                 "name": "FE",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 6,
+                 "name": "ME",
+                 "categoryGroupId": 2
+             },
+             {
+                 "id": 7,
+                 "name": "UI",
+                 "categoryGroupId": 2
+             }
+         ]
+     }
+ }

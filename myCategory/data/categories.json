@@ -1,0 +1,167 @@
+[
+      {
+          "id": 1,
+          "name": "개발자",
+          "categoryGroupId": 1
+      },
+      {
+          "id": 2,
+          "name": "기획자",
+          "categoryGroupId": 1
+      },
+      {
+          "id": 3,
+          "name": "디자이너",
+          "categoryGroupId": 1
+      },
+      {
+          "id": 4,
+          "name": "BE",
+          "categoryGroupId": 2
+      },
+      {
+          "id": 5,
+          "name": "FE",
+          "categoryGroupId": 2
+      },
+      {
+          "id": 6,
+          "name": "ME",
+          "categoryGroupId": 2
+      },
+      {
+          "id": 7,
+          "name": "UI",
+          "categoryGroupId": 2
+      },
+      {
+          "id": 8,
+          "name": "서비스기획",
+          "categoryGroupId": 3
+      },
+      {
+          "id": 9,
+          "name": "화면기획",
+          "categoryGroupId": 3
+      },
+      {
+          "id": 10,
+          "name": "개발기획",
+          "categoryGroupId": 3
+      },
+      {
+          "id": 11,
+          "name": "상품디자인",
+          "categoryGroupId": 4
+      },
+      {
+          "id": 12,
+          "name": "가구디자인",
+          "categoryGroupId": 4
+      },
+      {
+          "id": 13,
+          "name": "게임디자인",
+          "categoryGroupId": 4
+      },
+      {
+          "id": 14,
+          "name": "JAVA",
+          "categoryGroupId": 5
+      },
+      {
+          "id": 15,
+          "name": "Spring",
+          "categoryGroupId": 5
+      },
+      {
+          "id": 16,
+          "name": "C",
+          "categoryGroupId": 5
+      },
+      {
+          "id": 17,
+          "name": "C#",
+          "categoryGroupId": 5
+      },
+      {
+          "id": 18,
+          "name": "js",
+          "categoryGroupId": 6
+      },
+      {
+          "id": 19,
+          "name": "ts",
+          "categoryGroupId": 6
+      },
+      {
+          "id": 20,
+          "name": "react",
+          "categoryGroupId": 6
+      },
+      {
+          "id": 21,
+          "name": "vue",
+          "categoryGroupId": 6
+      },
+      {
+          "id": 22,
+          "name": "상",
+          "categoryGroupId": 7
+      },
+      {
+          "id": 23,
+          "name": "중",
+          "categoryGroupId": 7
+      },
+      {
+          "id": 24,
+          "name": "하",
+          "categoryGroupId": 7
+      },
+      {
+          "id": 25,
+          "name": "주니어",
+          "categoryGroupId": 8
+      },
+      {
+          "id": 26,
+          "name": "시니어",
+          "categoryGroupId": 8
+      },
+      {
+          "id": 27,
+          "name": "ios",
+          "categoryGroupId": 9
+      },
+      {
+          "id": 28,
+          "name": "android",
+          "categoryGroupId": 9
+      },
+      {
+          "id": 29,
+          "name": "mvc",
+          "categoryGroupId": 10
+      },
+      {
+          "id": 30,
+          "name": "boots",
+          "categoryGroupId": 10
+      },
+      {
+          "id": 31,
+          "name": "~7",
+          "categoryGroupId": 11
+      },
+      {
+          "id": 32,
+          "name": "8~15",
+          "categoryGroupId": 11
+      },
+      {
+          "id": 33,
+          "name": "15~",
+          "categoryGroupId": 11
+      }
+  ]

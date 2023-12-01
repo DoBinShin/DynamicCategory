@@ -59,8 +59,8 @@
                 makeCategory(parentElement, className, defaultCategories);
 
                 document.getElementById(buttonName).addEventListener("click", ()=> {
-                    const arr = replaceCategoryGroups(parentElement, className);
-                    localStorage.setItem("defaultCategories", JSON.stringify(arr));
+                    const {categories, categoryGroups} = findCurrentCategoryInfos(parentElement, className);
+                    localStorage.setItem("defaultCategories", JSON.stringify(categories));
                 });
             }
         })();
