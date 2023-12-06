@@ -1,12 +1,12 @@
-class CategoryGroupDto {
+class CategoryGroups {
 
      #id;
      #name;
      #categories;
 
-     constructor(param) {
-          this.#id = param.id;
-          this.#name = param.name;
+     constructor(id, name) {
+          this.#id = id;
+          this.#name = name;
      }
 
      get id() {
@@ -27,4 +27,4 @@ class CategoryGroupDto {
      
 }
 
-export default CategoryGroupDto;
+export default CategoryGroups;

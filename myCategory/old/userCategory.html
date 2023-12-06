@@ -27,21 +27,31 @@
         section {margin-bottom: 50px;}
         button {max-height: 50px;}
   </style>
-  <script src="./common.js"></script>
 </head>
 <body>
     <div style="display: flex;">
       <h1>사용자</h1>
     </div>
     <div id = "user"></div>
-    <script>
+    <script type="module">
+        import {loadCategory, UserCategory, UserCategoryData} from "./js/category.js"
+        
         (function() {
-            userView(document.getElementById("user"), "selUser");
-            function userView(parentElement, className) {
-                const defaultCategories = localStorage.getItem("defaultCategories") != null ? JSON.parse(localStorage.getItem("defaultCategories")) : undefined;
-                relations = localStorage.getItem("relations") != null ? JSON.parse(localStorage.getItem("relations")) : relations;
-                relationTree = generateRelationTree(relations);
-                makeCategory(parentElement, className, defaultCategories);
+
+            userCategorySelect();
+
+            async function userCategorySelect() {
+                let categoryGroups = await fetch("./data/categoryGroup.json").then(res => res.json());
+                let categories = await fetch("./data/categories.json").then(res => res.json());
+                let relations = await fetch("./data/relations.json").then(res => res.json());
+                let defaultCategoryIdList = [1, 5, 19, 26, 24];
+
+                let param = {categoryGroups, categories, relations, defaultCategoryIdList};
+
+                const userCategory = new UserCategory("user", "div", "div", "div", "div", "category", "select", "selectLabel", "checked");
+                const userCategoryData = new UserCategoryData(param);
+
+                loadCategory(userCategory, userCategoryData);
             }
         })();
     </script>

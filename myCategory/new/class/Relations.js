@@ -1,4 +1,4 @@
-class RelactionDto {
+class Relactions {
 
      #relationGroupId;
      #order;
@@ -41,4 +41,4 @@ class RelactionDto {
      }
 }
 
-export default RelactionDto;
+export default Relactions;
