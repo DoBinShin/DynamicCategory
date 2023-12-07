@@ -10,7 +10,7 @@ const data = {
      defaultCategorySymbol : Symbol('default')
 }
 
-const loadCategory = (userCategory, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, targetUrl) => {
+const loadCategory = (userCategory, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, userCallback) => {
     
      categoryGroupList.forEach(categoryGroup=>(data.categoryGroupMap[categoryGroup.id] = categoryGroup));
      categoriesList.forEach(category=>(data.categoryMap[category.id] = category));
@@ -25,8 +25,11 @@ const loadCategory = (userCategory, categoryGroupList, categoriesList, relations
 
      data.relationTree = generaterelationTree(relationsList);
 
-     findCategoryRelations(data.relationTree, defaultCategoryIdList, userCategory, targetUrl);
+     findCategoryRelations(data.relationTree, defaultCategoryIdList, userCategory, userCallback);
 }
+
+
+
 
 let generaterelationTree = function(relations) {
      let relationTree = {
@@ -56,32 +59,18 @@ let generaterelationTree = function(relations) {
 
       
       
-let toggle = false;
-let asyncCategoryRequestMap = {
-     '2': function(categoryGroupId, targetUrl) {
-          toggle=!toggle;
-          return new Promise((resolve, reject)=>{
-               setTimeout(async ()=>{ 
-                    const result = await fetch(targetUrl).then(res => res.json()); 
-                    resolve(result[categoryGroupId][toggle]);
-               }, 1000);
+
+let asyncLoadCategoryGroup = function(categoryGroupId, userCallback) {
+     const categories = userCallback(categoryGroupId);
+     if(categories) {
+          return categories.then(item => {
+               data.categoryGroupMap[categoryGroupId].categories = item;
+               return data.categoryGroupMap[categoryGroupId]
           });
-     }
-};
-
-let asyncLoadCategoryGroup = function(categoryGroupId, targetUrl) {
-     let categoryLoader = asyncCategoryRequestMap[categoryGroupId];
-
-     if(categoryLoader) {
-          return categoryLoader(categoryGroupId, targetUrl).then(categories=>{
-                    data.categoryGroupMap[categoryGroupId].categories = categories;
-                    return data.categoryGroupMap[categoryGroupId];
-               });
      } else {
           return Promise.resolve(data.categoryGroupMap[categoryGroupId]);
      }
 };
-
     
 
       
@@ -148,41 +137,41 @@ let getNextRelation = (function() {
 })();
 
 
-let findCategoryRelations = function (currentRelation, defaultCategoryIdList, userCategory, targetUrl) {
+let findCategoryRelations = function (currentRelation, defaultCategoryIdList, userCategory, userCallback) {
      if(0 < Object.keys(currentRelation).length) {
           locker.lock();
           let defaultCategoryId = defaultCategoryIdList.shift();
-          asyncLoadCategoryGroup(currentRelation.categoryGroupId, targetUrl).then(categoryGroup=>{
+          asyncLoadCategoryGroup(currentRelation.categoryGroupId, userCallback).then(categoryGroup=>{
                let nextRelation =
                     getNextRelation(currentRelation, defaultCategoryId) ||
                     getNextRelation(currentRelation, categoryGroup.categories[0].id) ||
                currentRelation.categories[data.defaultCategorySymbol];
-               createSelectTag(categoryGroup, defaultCategoryId, currentRelation, defaultCategoryIdList, userCategory, targetUrl);
-               findCategoryRelations(nextRelation, defaultCategoryIdList, userCategory, targetUrl);
+               createSelectTag(categoryGroup, defaultCategoryId, currentRelation, defaultCategoryIdList, userCategory, userCallback);
+               findCategoryRelations(nextRelation, defaultCategoryIdList, userCategory, userCallback);
           });
      } else {
        locker.unlock();
      }
 }
 
-let createSelectTag = function(categoryGroup, defaultCategoryId, currentRelation, defaultCategoryIdList, userCategory, targetUrl) {
+let createSelectTag = function(categoryGroup, defaultCategoryId, currentRelation, defaultCategoryIdList, userCategory, userCallback) {
      
      const {startElement, categoryElement, eventTarget} = userCategory.createTags(categoryGroup, defaultCategoryId);
 
      if(eventTarget) {
           eventTarget.childNodes.forEach(item => {
                item.addEventListener(userCategory.eventName, 
-                    replaceCategory(userCategory, categoryElement, currentRelation, defaultCategoryIdList, targetUrl));
+                    replaceCategory(userCategory, categoryElement, currentRelation, defaultCategoryIdList, userCallback));
           });
      } else {
           categoryElement.children[1].addEventListener(userCategory.eventName, 
-               replaceCategory(userCategory, categoryElement, currentRelation, defaultCategoryIdList, targetUrl));
+               replaceCategory(userCategory, categoryElement, currentRelation, defaultCategoryIdList, userCallback));
      }
      
      startElement.appendChild(categoryElement);
 }
 
-let replaceCategory = (UserCategory, categoryElement, currentRelation, defaultCategoryIdList, targetUrl) => {
+let replaceCategory = (UserCategory, categoryElement, currentRelation, defaultCategoryIdList, userCallback) => {
      return (e) => {
           let currentDiv = categoryElement.nextElementSibling;
                
@@ -197,7 +186,7 @@ let replaceCategory = (UserCategory, categoryElement, currentRelation, defaultCa
                currentRelation.categories[data.defaultCategorySymbol];
 
           if(nextRelation) {
-               findCategoryRelations(nextRelation, defaultCategoryIdList, UserCategory, targetUrl);
+               findCategoryRelations(nextRelation, defaultCategoryIdList, UserCategory, userCallback);
           }
      }
 }

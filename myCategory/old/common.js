@@ -427,6 +427,13 @@ let {categoryMap, categoryGroupMap, defaultCategorySymbol, relationTree, generat
         ]
     };
 
+    // 위에 저렇게 3종류의 데이터를 받는건데 우리가 임의로 만든 데이터이고 
+    // 그 때문에 아래 로직에서 걍 이 데이터들의 프로퍼티들을 그대로 사용하고 잇음
+    // 그러면 시불 저게 사용자가 넘겨주는 데이터라면...?!?!?!?
+    // 끔찍할거임, 왜냐하면 다 프로퍼티 명칭이 다를테니 ㄷㄷ
+
+    // ㅇㅋㅇㅋ??
+
     let categoryGroups = loadCategoryGroups();
     let categories = loadCategories();
 
@@ -638,6 +645,10 @@ let globalFlag = true;
  * @param {Number} index data Array의 index에 접근할 변수, default = 0
  * @param {Object} obj relationTree
  */
+
+// 이게 좀전에 make 머시기 함수 인데 이거 보면 데이터를 우리가 임의로 만들었기 때문에 코드보면 
+
+// 그래서 실제 데이터 보면 
 function makeCategory(parentElement = document.body, className = ".sel",  data = [], obj = relationTree, index = 0) {
 
     if(!data.length) {
@@ -645,7 +656,8 @@ function makeCategory(parentElement = document.body, className = ".sel",  data =
     }
 
     if(obj.categoryGroupId) {
-        const categoryGroups = categoryGroupMap[obj.categoryGroupId];
+        // 몇몇 눈에 띄는 프로퍼티가 있음 
+        const categoryGroups = categoryGroupMap[obj.categoryGroupId]; //요놈이라던지 
         const paramCategoryId = data[index];
         const relation = obj.categories[paramCategoryId] ||
             obj.categories[Object.keys(obj.categories)[0]] ||
@@ -700,7 +712,8 @@ function createElements (currentCategoryGroupId, className) {
     div.draggable = true;
     const label = document.createElement("label");
     label.htmlFor = currentCategoryGroupId;
-    label.innerText = categoryGroupMap[currentCategoryGroupId].name;
+    
+    label.innerText = categoryGroupMap[currentCategoryGroupId].name; // 요놈들이라던지 
     const selectBox = document.createElement("select");
     selectBox.className = className || ".sel";
     selectBox.id = currentCategoryGroupId;

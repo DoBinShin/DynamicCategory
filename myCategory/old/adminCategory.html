@@ -49,13 +49,20 @@
     <div id = "admin"></div>
     <script>
         (function() {
+
+         
             adminDefaultSetting(document.getElementById("admin"), "selAdmin", "save");
 
             /** param : parentElement, selectBox-className, save-button-idName */
             function adminDefaultSetting(parentElement, className, buttonName) {
+                
+                
                 const defaultCategories = localStorage.getItem("defaultCategories") != null ? JSON.parse(localStorage.getItem("defaultCategories")) : undefined;
                 relations = localStorage.getItem("relations") != null ? JSON.parse(localStorage.getItem("relations")) : relations;
                 relationTree = generateRelationTree(relations);
+                
+                
+                // 이 make머시기가 내 솔루션 함수임 (즉, 좀전에 kimFunc와 마찬가지)
                 makeCategory(parentElement, className, defaultCategories);
 
                 document.getElementById(buttonName).addEventListener("click", ()=> {

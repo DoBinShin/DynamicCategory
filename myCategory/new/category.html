@@ -34,17 +34,47 @@
     </div>
     <div id = "user"></div>
     <script type="module">
-        import {loadCategory, UserCategory, Categories, CategoryGroups, Relations} from "./js/category.js"
         
+        import {loadCategory, UserCategory, Categories, CategoryGroups, Relations} from "./js/category.js"
+
         (function() {
 
-            userCategorySelect();
+            let toggle = false;
+            let asyncCategoryRequestMap = {
+                '2': function(categoryGroupId, targetUrl) {
+                    toggle=!toggle;
+                    return new Promise((resolve, reject)=>{
+                        setTimeout(async ()=>{ 
+                                const result = await fetch(targetUrl).then(res => res.json()); 
+                                resolve(result[categoryGroupId][toggle]);
+                        }, 1000);
+                    });
+                }
+            };
+
+            let userCallback = (categoryGroupId) => {
+                let userCategoryId = categoryGroupId;
+
+                let categoryLoader = asyncCategoryRequestMap[userCategoryId];
+                const targetUrl = "./data/newCategories.json";
+
+                if(categoryLoader) {
+                    return categoryLoader(userCategoryId, targetUrl).then(categories=>{
+                        const result = categories.map(item => {
+                                return new Categories(item.id, item.name, item.categoryGroupId);
+                        });
+                        return result;
+                    });
+                }
+            };
 
             async function userCategorySelect() {
                 let categoryGroups = await fetch("./data/categoryGroup.json").then(res => res.json());
                 let categories = await fetch("./data/categories.json").then(res => res.json());
                 let relations = await fetch("./data/relations.json").then(res => res.json());
                 let defaultCategoryIdList = [1, 5, 19, 26, 24];
+
+ 
 
                 const categoryGroupList = [];
                 const categoriesList = [];
@@ -67,12 +97,12 @@
                     ));
                 });
 
-
                 const userCategory = new UserCategory("user", "div", "div", "div", "div", "category", "select", "selectLabel", "options","click");
-                const targetUrl = "./data/newCategories.json";
 
-                loadCategory(userCategory, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, targetUrl);
+                loadCategory(userCategory, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, userCallback);
             }
+
+            userCategorySelect();
         })();
     </script>
 </body>
