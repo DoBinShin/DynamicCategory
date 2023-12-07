@@ -1,5 +1,4 @@
 class UserCategory {
-    // 여기의 속성들은 optional도 있을 수 있지만 카테고리를 구성하는데 필요한 요소(속성)라 볼 수 있음
      constructor(startElementId, parentTagName, groupsTagName, groupsLabel, rowsTagName, parentClassName, groupsClassName, groupsLableClassName, rowsClassName, eventName) {
         this.startElementId = startElementId;
         this.parentTagName = parentTagName || 'div';
@@ -13,7 +12,6 @@ class UserCategory {
         this.eventName = eventName || 'change';
      }
 
-     // 입력 받은 tag정보들로 카테고리 element를 생성해주는 메소드
      createTags(categoryGroup, defaultCategoryId) {
         let startElement = this.startElementId ? document.getElementById(this.startElementId) : document.body;
         let parent = document.createElement(this.parentTagName);
