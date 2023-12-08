@@ -994,3 +994,44 @@ function chagneCategoryElement(parentElement, className, categoryGroupId, catego
         bool && replaceCurrentCategoryGroups(parentElement, className)
     }
 }
+
+
+
+function A(p){return new Promise((resolve, reject)=>{
+    console.log(`${p}-A`);
+    setTimeout(()=>{console.log(`${p}-A-resolve`);resolve('A');}, 5000);
+  })}
+  function E(){console.log('E');}
+  function B(p){return new Promise((resolve, reject)=>{
+    console.log(`${p}-B`);
+    setTimeout(()=>{console.log(`${p}-B-resolve`);resolve('B');}, 1500);
+  })}
+  function C(p){return new Promise((resolve, reject)=>{
+    console.log(`${p}-C`);
+    setTimeout(()=>{console.log(`${p}-C-resolve`);resolve('C');}, 1000);
+  })}
+  function D(p){return new Promise((resolve, reject)=>{
+    console.log(`${p}-D`);
+    setTimeout(()=>{console.log(`${p}-D-resolve`);resolve('D');}, 2500);
+  })}
+  function a1(){console.log('a1');};
+  function b1(){console.log('b1');};
+  
+  function c1() {
+  A('c1').then(console.log);
+  let b = E();
+  B('c1').then(console.log);
+  let d = b+1;  
+  }
+  
+function d1() {
+    C('c1').then(console.log);
+  let b = E();
+    D('c1').then(console.log);
+  let d = b+1;  
+  }
+  
+  a1();
+  c1();
+  b1();
+  d1();

@@ -18,12 +18,17 @@
             display: flex; 
             justify-content : flex-start;
         }
+        #user1 {
+            display: flex;
+            justify-content : flex-start;
+        }
         #admin {
             display: flex; 
             justify-content : flex-start;
         }
         #admin div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
         #user div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc; cursor: pointer;}
+        #user1 div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc; cursor: pointer;}
         section {margin-bottom: 50px;}
         button {max-height: 50px;}
   </style>
@@ -33,6 +38,7 @@
       <h1>사용자</h1>
     </div>
     <div id = "user"></div>
+    <div id = "user1"></div>
     <script type="module">
         
         import {loadCategory, UserCategory, Categories, CategoryGroups, Relations} from "./js/category.js"
@@ -74,7 +80,7 @@
                 let relations = await fetch("./data/relations.json").then(res => res.json());
                 let defaultCategoryIdList = [1, 5, 19, 26, 24];
 
- 
+
 
                 const categoryGroupList = [];
                 const categoriesList = [];
@@ -99,10 +105,34 @@
 
                 const userCategory = new UserCategory("user", "div", "div", "div", "div", "category", "select", "selectLabel", "options","click");
 
+                const userCategory1 = new UserCategory("user1", "div", "div", "div", "div", "category", "select", "selectLabel", "options","click");
+                // 카테고리 옵션을 지정해줄 클래스
+                // 데이터들을 우리(모듈)이 알아들을 수 잇게 dto 클래스
+
                 loadCategory(userCategory, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, userCallback);
+                loadCategory(userCategory1, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, userCallback);
             }
 
             userCategorySelect();
+
+
+            const onetohund = {
+                [Symbol.iterator]() {
+                    let num = 0;
+                    const max = 100;
+
+                    return  {
+                        next() {
+                            num = ++num;
+                            return {value: num, done:num <= max};
+                        }
+                    }
+                }
+            }
+
+            for (const num of onetohund) {
+                console.log(num);
+            }
         })();
     </script>
 </body>
