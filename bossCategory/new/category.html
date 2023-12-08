@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+        display: flex; 
+        justify-content : flex-start;
+    }
+    label {
+        background : skyblue;
+        padding: 5px 10px;
+        color: #fff;
+        height: 30px;
+        box-sizing: border-box;
+        font-weight: bold;
+    }
+    select{padding: 5px 10px; height: 30px; box-sizing: border-box; border-radius: 4px; border: none; font-weight: bold;}
+    div{display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
+</style>
+</head>
+<body>
+  <div id="container"></div>
+  <script>
+    (function() {
+      class CategoryTree {
+        #defaultCategorySymbol = Symbol('default');
+
+        #asyncCategoryGroupsLoader;
+        #asyncCategoriesLoader;
+        #asyncRelationsLoader;
+        
+        #asyncCategoryLoaderMap = new Map();
+
+        #categoryGroups;
+        #categories;
+        #relations; 
+
+        #relationTree;
+
+        #categoryGroupMap = new Map();
+        #categoryMap = new Map();
+
+        #lockFlag = false;
+        
+        onLoad = undefined;
+
+        #lock() {
+          if(!this.#lockFlag) {
+            this.#lockFlag = true;
+            //처리 로직
+          }
+        }
+
+        #unlock() {
+          if(this.#lockFlag) {
+            this.#lockFlag = true;
+            //처리 로직
+          }
+        }
+
+        constructor(asyncCategoryGroupsLoader, asyncCategoriesLoader, asyncRelationsLoader, asyncCategoryLoaderMap) {
+          this.#asyncCategoryGroupsLoader = asyncCategoryGroupsLoader;  
+          this.#asyncCategoriesLoader = asyncCategoriesLoader;
+          this.#asyncRelationsLoader = asyncRelationsLoader;
+
+          for(let key in asyncCategoryLoaderMap) {
+            this.addAsyncCategoryLoader(key, asyncCategoryLoaderMap[key]);
+          }
+
+          this.refresh();
+        }
+
+        addAsyncCategoryLoader(categoryGroupId, loader) {
+          this.#asyncCategoryLoaderMap.set(categoryGroupId, loader);
+        }
+        
+        removeAsyncCategoryLoader(categoryGroupId) {
+          this.#asyncCategoryLoaderMap.delete(categoryGroupId);
+        }
+
+        refresh() {
+          Promise.all([this.#asyncCategoryGroupsLoader(), this.#asyncCategoriesLoader(), this.#asyncRelationsLoader()]).then(response=>{
+            this.#categoryGroups = response[0];
+            this.#categories = response[1];
+            this.#relations = response[2];
+
+            this.#relationTree = this.#generateRelationTree();
+            
+            this.#categoryGroups.forEach(categoryGroup=>(this.#categoryGroupMap[categoryGroup.id] = categoryGroup));
+            this.#categories.forEach(category=>(this.#categoryMap[category.id] = category));
+
+            for(let key in this.#categoryMap) {
+              let category = this.#categoryMap[key];
+              let categoryGroup = this.#categoryGroupMap[category.categoryGroupId];
+              category.categoryGroup = categoryGroup;
+              categoryGroup.categories = categoryGroup.categories || [];
+              categoryGroup.categories.push(category);
+            }
+          })
+          .then(()=>{
+            this.onLoad && this.onLoad();
+          }).catch(error=>{
+            throw new Error(error);
+          });
+        }
+
+        #generateRelationTree() {
+          let relationTree = {
+            categoryGroupId: this.#relations[0].categoryGroupId,
+            categories: {}
+          };      
+          let prevRelationgroupId=0;
+          let current = undefined;
+
+          this.#relations.forEach(relation=>{
+            if(prevRelationgroupId==relation.relationGroupId) {
+              current.categoryGroupId = relation.categoryGroupId;
+              current.categories = current.categories || {};
+            } else if(prevRelationgroupId!=relation.relationGroupId) { // 끝났음
+              current = relationTree;
+              prevRelationgroupId = relation.relationGroupId;
+            }
+
+            let categoryId = relation.values ? (relation.operator + '|' + relation.valueType + '|' + relation.values):this.#defaultCategorySymbol;
+            current.categories[categoryId] = current.categories[categoryId] || {};
+            current = current.categories[categoryId];
+          });
+
+          return relationTree;
+        };
+        #asyncLoadCategoryGroup(categoryGroupId) {
+          let categoryLoader = this.#asyncCategoryLoaderMap[categoryGroupId];
+
+          if(categoryLoader) {
+            return categoryLoader().then(categories=>{
+              this.#categoryGroupMap[categoryGroupId].categories = categories;
+              return this.#categoryGroupMap[categoryGroupId];
+            });
+          } else {
+            return Promise.resolve(this.#categoryGroupMap[categoryGroupId]);
+          }
+        };      
+        #operatorMap = {
+          '=': (valuesString, value)=>{
+            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
+            return result;
+          },
+          '<': (valuesString, value)=>{ //만들자
+            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
+            return result;
+          },
+          '>': (valuesString, value)=>{ //만들자
+            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
+            return result;
+          },
+          'in': (valuesString, value)=>{
+            let result = -1<(',' + valuesString + ',').indexOf(',' + value + ',');
+            return result;
+          }
+        };
+
+        #getNextRelation(relation, categoryId) {
+          if(categoryId) {
+            for(let key in relation.categories) {
+              let result = /(.*?)\|(.*?)\|(.*)/.exec(key);
+
+              if(result) {
+                if(this.#operatorMap[result[1]](result[3], this.#categoryMap[categoryId][result[2]])) {
+                  return relation.categories[key];
+                }
+              }
+            }
+          }
+        }
+
+        #findNextCategory(currentRelation, defaultCategoryIdList) {
+          if(0<Object.keys(currentRelation).length) {
+            this.#lock();
+            let defaultCategoryId = defaultCategoryIdList.shift();
+            this.#asyncLoadCategoryGroup(currentRelation.categoryGroupId).then(categoryGroup=>{
+              let nextRelation = 
+                this.#getNextRelation(currentRelation, defaultCategoryId) || 
+                this.#getNextRelation(currentRelation, categoryGroup.categories[0].id) || 
+                currentRelation.categories[this.#defaultCategorySymbol];
+
+              //createSelectTag(categoryGroup, defaultCategoryId, currentRelation, defaultCategoryIdList);
+
+              this.#findNextCategory(nextRelation, defaultCategoryIdList);
+            });
+          } else {
+            this.#unlock();
+          }
+        }
+
+        findNextCategory(defaultCategoryIdList) {
+          this.#findNextCategory(this.#relationTree, defaultCategoryIdList);
+        }
+      }
+
+      //####################### user
+      let asyncCategoryGroupsLoader = function() {
+        return new Promise((resolve, rejct)=>{
+          setTimeout(()=>{ 
+            resolve([
+              {
+                id: 1,
+                name: '직군'	
+              }, {
+                id: 2,
+                name: '개발자구분'
+              }, {
+                id: 3,
+                name: '기획자구분'
+              }, {
+                id: 4,
+                name: '디자이너구분'
+              }, {
+                id: 5,
+                name: 'BE보유스킬'
+              }, {
+                id: 6,
+                name: 'FE보유스킬'
+              }, {
+                id: 7,
+                name: '숙련도'
+              }, {
+                id: 8,
+                name: '경력'
+              }, {
+                id: 9,
+                name: 'ME플랫폼'
+              }, {
+                id: 10,
+                name: 'Spring Type'
+              }, {
+                id: 11,
+                name: 'JDK Version'
+              }
+            ]), 
+          10});
+        });
+      };
+      let asyncCategoriesLoader = function() {
+        return new Promise((resolve, rejct)=>{
+          setTimeout(()=>{ 
+            resolve([
+              { id: 1,
+                name: '개발자',
+                categoryGroupId: 1, 
+              },
+              { id: 2,
+                name: '기획자',
+                categoryGroupId: 1, 
+              },
+              { id: 3,
+                name: '디자이너',
+                categoryGroupId: 1, 
+              },
+              { id: 4,
+                name: 'BE',
+                categoryGroupId: 2, 
+              },
+              { id: 5,
+                name: 'FE',
+                categoryGroupId: 2, 
+              },
+              { id: 6,
+                name: 'ME',
+                categoryGroupId: 2, 
+              },
+              { id: 7,
+                name: 'UI',
+                categoryGroupId: 2, 
+              },
+              { id: 8,
+                name: '서비스기획',
+                categoryGroupId: 3, 
+              },
+              { id: 9,
+                name: '화면기획',
+                categoryGroupId: 3, 
+              },
+              { id: 10,
+                name: '개발기획',
+                categoryGroupId: 3, 
+              },
+              { id: 11,
+                name: '상품디자인',
+                categoryGroupId: 4, 
+              },
+              { id: 12,
+                name: '가구디자인',
+                categoryGroupId: 4, 
+              },
+              { id: 13,
+                name: '게임디자인',
+                categoryGroupId: 4, 
+              },
+              { id: 14,
+                name: 'JAVA',
+                categoryGroupId: 5, 
+              },
+              { id: 15,
+                name: 'Spring',
+                categoryGroupId: 5, 
+              },
+              { id: 16,
+                name: 'C',
+                categoryGroupId: 5, 
+              },
+              { id: 17,
+                name: 'C#',
+                categoryGroupId: 5, 
+              },
+              { id: 18,
+                name: 'js',
+                categoryGroupId: 6, 
+              },
+              { id: 19,
+                name: 'ts',
+                categoryGroupId: 6, 
+              },
+              { id: 20,
+                name: 'react',
+                categoryGroupId: 6, 
+              },
+              { id: 21,
+                name: 'vue',
+                categoryGroupId: 6, 
+              },
+              { id: 22,
+                name: '상',
+                categoryGroupId: 7, 
+              },
+              { id: 23,
+                name: '중',
+                categoryGroupId: 7, 
+              },
+              { id: 24,
+                name: '하',
+                categoryGroupId: 7, 
+              },
+              { id: 25,
+                name: '주니어',
+                categoryGroupId: 8, 
+              },
+              { id: 26,
+                name: '시니어',
+                categoryGroupId: 8, 
+              },
+              { id: 27,
+                name: 'ios',
+                categoryGroupId: 9, 
+              },
+              { id: 28,
+                name: 'android',
+                categoryGroupId: 9, 
+              },
+              { id: 29,
+                name: 'mvc',
+                categoryGroupId: 10, 
+              },
+              { id: 30,
+                name: 'boots',
+                categoryGroupId: 10, 
+              },
+              { id: 31,
+                name: '~7',
+                categoryGroupId: 11, 
+              },
+              { id: 32,
+                name: '8~15',
+                categoryGroupId: 11, 
+              },
+              { id: 33,
+                name: '15~',
+                categoryGroupId: 11, 
+              },
+            ]), 
+          10});
+        });
+      };
+      let asyncRelationsLoader = function() {
+        return new Promise((resolve, rejct)=>{
+          setTimeout(()=>{ 
+            resolve([
+              {
+                relationGroupId: 1,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['1'],
+                operator: '=',
+                valueType: 'id' //카테고리 데이타의 필드명
+              },
+              {
+                relationGroupId: 1,
+                order: 2,
+                categoryGroupId: 2,
+                values: ['4'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 1,
+                order: 3,
+                categoryGroupId: 5,
+                values: ['14'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 1,
+                order: 4,
+                categoryGroupId: 11,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },          
+              {
+                relationGroupId: 2,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['1'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 2,
+                order: 2,
+                categoryGroupId: 2,
+                values: ['4'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 2,
+                order: 3,
+                categoryGroupId: 5,
+                values: ['15'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 2,
+                order: 4,
+                categoryGroupId: 10,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 3,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['1'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 3,
+                order: 2,
+                categoryGroupId: 2,
+                values: ['4'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 3,
+                order: 3,
+                categoryGroupId: 5,
+                values: ['D', 'C#'],
+                operator: 'in',
+                valueType: 'name'
+              },
+              {
+                relationGroupId: 3,
+                order: 4,
+                categoryGroupId: 7,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 5,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['1'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 5,
+                order: 2,
+                categoryGroupId: 2,
+                values: ['5'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 5,
+                order: 3,
+                categoryGroupId: 6,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 5,
+                order: 4,
+                categoryGroupId: 8,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 5,
+                order: 5,
+                categoryGroupId: 7,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 6,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['1'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 6,
+                order: 2,
+                categoryGroupId: 2,
+                values: ['6'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 6,
+                order: 3,
+                categoryGroupId: 8,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 6,
+                order: 4,
+                categoryGroupId: 9,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 7,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['1'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 7,
+                order: 2,
+                categoryGroupId: 2,
+                values: ['7'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 7,
+                order: 3,
+                categoryGroupId: 8,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 8,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['2'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 8,
+                order: 1,
+                categoryGroupId: 3,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 8,
+                order: 2,
+                categoryGroupId: 8,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 9,
+                order: 1,
+                categoryGroupId: 1,
+                values: ['3'],
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 9,
+                order: 2,
+                categoryGroupId: 4,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              },
+              {
+                relationGroupId: 9,
+                order: 3,
+                categoryGroupId: 8,
+                values: null,
+                operator: '=',
+                valueType: 'id'
+              }
+            ]), 
+          10});
+        });
+      };
+      let asyncCategoryLoader2 = function(paramMap) {
+          return new Promise((resolve, reject)=>{
+            setTimeout(()=>{          
+              if(paramMap['1']==='2023') {
+                resolve([
+                  { id: 4,
+                  name: 'BE',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 5,
+                  name: 'FE',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 6,
+                  name: 'ME',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 7,
+                  name: 'UI',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 10007,
+                  name: 'DESIGN',
+                  categoryGroupId: 2, 
+                  }
+                ]);
+              } else {
+                resolve([
+                  { id: 4,
+                  name: 'BE',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 5,
+                  name: 'FE',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 6,
+                  name: 'ME',
+                  categoryGroupId: 2, 
+                  },
+                  { id: 7,
+                  name: 'UI',
+                  categoryGroupId: 2, 
+                  }
+                ]);
+              }
+            }, 1000);
+          });
+      };
+
+      
+      let categoryTree = new CategoryTree(
+        asyncCategoryGroupsLoader, 
+        asyncCategoriesLoader, 
+        asyncRelationsLoader, 
+        {
+          '2': asyncCategoryLoader2
+        }
+      );
+      //categoryTree.addAsynegoryLoader('2', asyncCategoryLoader2);
+      
+      categoryTree.onLoad = function(){
+        categoryTree.findNextCategory([1,5,19, 26, 24]);
+      };      
+    })();
+  </script>
+</body>
+</html>

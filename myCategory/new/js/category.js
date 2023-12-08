@@ -128,7 +128,7 @@ let getNextRelation = (function() {
 
                if(result) {
                     if(operatorMap[result[1]](result[3], data.categoryMap[categoryId] && data.categoryMap[categoryId][result[2]])) {
-                    return relation.categories[key];
+                         return relation.categories[key];
                     }
                }
           }
