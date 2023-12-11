@@ -192,6 +192,36 @@
         #lockFlag = false;
         
         onLoad = undefined;
+        onChange = undefined;
+
+        #categoryIdList=[];
+
+        #operatorMap = {
+          '=': (valuesString, value)=>{
+            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
+            return result;
+          },
+          '<': (valuesString, value)=>{ //만들자
+            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
+            return result;
+          },
+          '>': (valuesString, value)=>{ //만들자
+            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
+            return result;
+          },
+          'in': (valuesString, value)=>{
+            let result = -1<(',' + valuesString + ',').indexOf(',' + value + ',');
+            return result;
+          }
+        };
+
+        #onChange(categoryId) {
+          if(categoryId && this.onChange) {
+            let category = this.#categoryMap.get(categoryId);
+            let categoryGroup = this.#categoryGroupMap.get(category.categoryGroupId);
+            this.onChange(categoryGroup, category);
+          }
+        }
 
         #lock() {
           if(!this.#lockFlag) {
@@ -235,16 +265,15 @@
 
             this.#relationTree = this.#generateRelationTree();
             
-            this.#categoryGroups.forEach(categoryGroup=>(this.#categoryGroupMap[categoryGroup.id] = categoryGroup));
-            this.#categories.forEach(category=>(this.#categoryMap[category.id] = category));
+            this.#categoryGroups.forEach(categoryGroup=>(this.#categoryGroupMap.set(categoryGroup.id, categoryGroup)));
+            this.#categories.forEach(category=>(this.#categoryMap.set(category.id, category)));
 
-            for(let key in this.#categoryMap) {
-              let category = this.#categoryMap[key];
-              let categoryGroup = this.#categoryGroupMap[category.categoryGroupId];
+            this.#categoryMap.forEach(category=>{
+              let categoryGroup = this.#categoryGroupMap.get(category.categoryGroupId);
               category.categoryGroup = categoryGroup;
               categoryGroup.categories = categoryGroup.categories || [];
               categoryGroup.categories.push(category);
-            }
+            });
           })
           .then(()=>{
             this.onLoad && this.onLoad();
@@ -279,36 +308,20 @@
 
           return relationTree;
         };
+        
         #asyncLoadCategoryGroup(categoryGroupId) {
           let categoryLoader = this.#asyncCategoryLoaderMap.get(categoryGroupId);
 
           if(categoryLoader) {
             return categoryLoader().then(categories=>{
-              this.#categoryGroupMap[categoryGroupId].categories = categories;
-              return this.#categoryGroupMap[categoryGroupId];
+              let categoryGroup = this.#categoryGroupMap.get(categoryGroupId);
+              categoryGroup.categories = categories;
+              return categoryGroup;
             });
           } else {
-            return Promise.resolve(this.#categoryGroupMap[categoryGroupId]);
+            return Promise.resolve(this.#categoryGroupMap.get(categoryGroupId));
           }
         };      
-        #operatorMap = {
-          '=': (valuesString, value)=>{
-            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
-            return result;
-          },
-          '<': (valuesString, value)=>{ //만들자
-            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
-            return result;
-          },
-          '>': (valuesString, value)=>{ //만들자
-            let result = (',' + valuesString + ',').startsWith(',' + value + ',');
-            return result;
-          },
-          'in': (valuesString, value)=>{
-            let result = -1<(',' + valuesString + ',').indexOf(',' + value + ',');
-            return result;
-          }
-        };
 
         #getNextRelation(relation, categoryId) {
           if(categoryId) {
@@ -316,7 +329,7 @@
               let result = /(.*?)\|(.*?)\|(.*)/.exec(key);
 
               if(result) {
-                if(this.#operatorMap[result[1]](result[3], this.#categoryMap[categoryId][result[2]])) {
+                if(this.#operatorMap[result[1]](result[3], this.#categoryMap.get(categoryId)[result[2]])) {
                   return relation.categories[key];
                 }
               }
@@ -349,15 +362,72 @@
         }
 
         getCategories() {
-          return this.#categoryIdList.map(categoryId=>(this.#categoryMap[categoryId]));
+          return this.#categoryIdList.map(categoryId=>(this.#categoryMap.get(categoryId)));
         }
 
-        #categoryIdList=[];
+        #currentRelation;
 
-        getAsyncIterator() {
+        reset() {
+          this.#currentRelation = undefined;
+        }
+
+        next(categoryId) {
+          let value, done;
+
+          if(this.#currentRelation) {
+            this.#currentRelation.selected = categoryId || this.#currentRelation.selected;  
+            categoryId = this.#currentRelation.selected || this.#categoryGroupMap.get(this.#currentRelation.categoryGroupId).categories[0].id;  
+            this.#categoryIdList[this.#currentRelation.depth] = categoryId;
+            this.#currentRelation = this.#getNextRelation(this.#currentRelation, categoryId) || this.#currentRelation.categories[this.#defaultCategorySymbol];
+
+            if(this.#currentRelation && (0<Object.keys(this.#currentRelation).length)) {
+              ((currentRelation)=>{
+                value = this.#asyncLoadCategoryGroup(currentRelation.categoryGroupId).then(categoryGroup=>{
+                  let categoryId = currentRelation.selected || categoryGroup.categories[0].id;
+                  this.#categoryIdList[currentRelation.depth] = categoryId;
+                  let categoryInfo ={
+                    categoryGroup, 
+                    category:this.#categoryMap.get(categoryId), 
+                    callback: ()=>(this.#currentRelation = currentRelation)
+                  };
+                  return categoryInfo;
+                });
+              })(this.#currentRelation);
+
+              done = false;
+            } else {
+              this.#currentRelation = undefined;
+              value = Promise.resolve();
+              done = true;
+            }
+          } else {
+            this.#currentRelation = this.#relationTree;
+
+            this.#currentRelation.selected = categoryId || this.#currentRelation.selected;  
+            categoryId = this.#currentRelation.selected || this.#categoryGroupMap.get(this.#currentRelation.categoryGroupId).categories[0].id;
+            this.#categoryIdList[this.#currentRelation.depth] = categoryId;
+            
+            ((currentRelation)=>{
+              let categoryInfo = {
+                categoryGroup:this.#categoryGroupMap.get(this.#relationTree.categoryGroupId), 
+                category:this.#categoryMap.get(categoryId), 
+                callback: ()=>(this.#currentRelation = currentRelation)
+              };
+              value = Promise.resolve(categoryInfo);
+            })(this.#currentRelation);
+
+            done = ((this.#currentRelation.categories===undefined) || (0===Object.keys(this.#currentRelation.categories).length));
+          }
+
+          this.#onChange(categoryId);
+
+          return {value, done};
+        }
+
+        getAsyncIterator() { //next를 보고 catregoryId 부분 정리 필요함
           let currentRelation;
           let thiz = this;
-
+          
           return {
             [Symbol.iterator]() {
               return this;
@@ -368,16 +438,19 @@
               if(currentRelation) {
                 currentRelation.selected = categoryId;
 
-                categoryId = categoryId || thiz.#categoryGroupMap[currentRelation.categoryGroupId].categories[0].id;
+                categoryId = categoryId || thiz.#categoryGroupMap.get(currentRelation.categoryGroupId).categories[0].id;
                 thiz.#categoryIdList[currentRelation.depth] = categoryId;
 
                 currentRelation = thiz.#getNextRelation(currentRelation, categoryId) || currentRelation.categories[thiz.#defaultCategorySymbol];
 
                 if(currentRelation && (0<Object.keys(currentRelation).length)) {
-                  value = thiz.#asyncLoadCategoryGroup(currentRelation.categoryGroupId).then(categoryGroup=>{
-                    thiz.#categoryIdList[currentRelation.depth] = categoryGroup.categories[0].id;
-                    return categoryGroup;
-                  });
+                  ((currentRelation)=>{
+                    value = thiz.#asyncLoadCategoryGroup(currentRelation.categoryGroupId).then(categoryGroup=>{
+                      thiz.#categoryIdList[currentRelation.depth] = categoryGroup.categories[0].id;
+                      return {categoryGroup, category:thiz.#categoryMap.get(categoryGroup.categories[0].id)};
+                    });
+                  })(currentRelation);
+
                   done = false;
                 } else {
                   currentRelation = undefined;
@@ -387,12 +460,14 @@
               } else {
                 currentRelation = thiz.#relationTree;
 
-                categoryId = categoryId || thiz.#categoryGroupMap[currentRelation.categoryGroupId].categories[0].id;
+                categoryId = categoryId || thiz.#categoryGroupMap.get(currentRelation.categoryGroupId).categories[0].id;
                 thiz.#categoryIdList[currentRelation.depth] = categoryId;
 
-                value = Promise.resolve(thiz.#categoryGroupMap[thiz.#relationTree.categoryGroupId]);
+                value = Promise.resolve({categoryGroup:thiz.#categoryGroupMap.get(thiz.#relationTree.categoryGroupId), category:thiz.#categoryMap.get(categoryId)});
                 done = ((currentRelation.categories===undefined) || (0===Object.keys(currentRelation.categories).length));
               }
+
+              thiz.#onChange(categoryId);
 
               return {value, done};
             }
@@ -400,6 +475,97 @@
         }
       }
 
+      class CategoryTreeRenderer {
+        #categoryTree;
+
+        constructor(categoryTree) {
+          this.#categoryTree = categoryTree;
+        }
+
+        render(all=false) {
+          let lazyRender = [];
+
+          this.onBeforeRender();
+          this.#categoryTree.reset();
+          
+          let forIterator = (categoryId)=>{
+            let {done, value} = this.#categoryTree.next(categoryId);
+            
+            if(done) {
+              if(all) {
+                lazyRender.forEach(onRender=>onRender());
+                lazyRender = [];
+              }
+
+              this.onAfterRender();
+            } else {
+              value.then((categoryGroupInfo)=>{
+                if(all) {
+                  lazyRender.push(()=>{
+                    this.onRender(categoryGroupInfo.categoryGroup, categoryGroupInfo.category, (categoryId, before)=>{
+                      lazyRender.push(()=>{before()});
+                      categoryGroupInfo.callback();
+                      forIterator(categoryId);
+                    });
+                  });
+                } else {
+                  this.onRender(categoryGroupInfo.categoryGroup, categoryGroupInfo.category, (categoryId, before)=>{
+                    before();
+                    categoryGroupInfo.callback();
+                    forIterator(categoryId);
+                  });
+                }
+
+                forIterator();
+              });
+            }
+          }
+
+          forIterator();
+        }
+
+        onBeforeRender() {
+          document.getElementById('container').innerHTML = '';
+        }
+
+        onAfterRender() {
+          console.log('onAfterRender');
+        }
+
+        onRender(categoryGroup, defaultCategory, callbackChange) {
+          let div = document.createElement('div');
+          let html = '';
+
+          div.classList.add('select');
+
+          html+=`<label>${categoryGroup.name}</label>`;
+          html+=`<select>`;
+
+          categoryGroup.categories.forEach(category=>{
+            let selected = (String(category.id)===String(defaultCategory.id))? 'selected':'';
+            html+=`  <option value=${category.id} ${selected}>${category.name}</option>`;
+          });
+
+          html+=`</select>`;
+
+          div.innerHTML = html;
+          let select = div.children[1];
+          
+          select.addEventListener('change', (e)=>{
+            callbackChange(e.currentTarget.value, ()=>{
+              let currentDiv = div.nextElementSibling;
+            
+              while(currentDiv?.classList.contains('select')) {
+                let removeDiv = currentDiv;
+                currentDiv=currentDiv.nextElementSibling;
+                removeDiv.remove();
+              }
+            });
+          });
+          
+          document.getElementById('container').appendChild(div);
+        }
+      }
       //####################### user
       let userAsyncCategoryGroupsLoader = function() {
         return new Promise((resolve, rejct)=>{
@@ -671,7 +837,7 @@
                 relationGroupId: 3,
                 order: 3,
                 categoryGroupId: 5,
-                values: ['D', 'C#'],
+                values: ['C', 'C#'],
                 operator: 'in',
                 valueType: 'name'
               },
@@ -837,40 +1003,98 @@
           setTimeout(()=>{          
             if(paramMap['1']==='2023') {
               resolve([
-                { id: 4,
-                name: 'BE',
-                categoryGroupId: 2, 
+                { 
+                  id: 4,
+                  name: 'BE',
+                  categoryGroupId: 2, 
                 },
-                { id: 5,
-                name: 'FE',
-                categoryGroupId: 2, 
+                { 
+                  id: 5,
+                  name: 'FE',
+                  categoryGroupId: 2, 
                 },
-                { id: 6,
-                name: 'ME',
-                categoryGroupId: 2, 
+                { 
+                  id: 6,
+                  name: 'ME',
+                  categoryGroupId: 2, 
                 },
-                { id: 7,
-                name: 'UI',
-                categoryGroupId: 2, 
+                { 
+                  id: 7,
+                  name: 'UI',
+                  categoryGroupId: 2, 
                 },
-                { id: 10007,
-                name: 'DESIGN',
-                categoryGroupId: 2, 
+                { 
+                  id: 10007,
+                  name: 'DESIGN',
+                  categoryGroupId: 2, 
                 }
               ]);
             } else {
               resolve([
-                { id: 4,
-                name: 'BE',
-                categoryGroupId: 2, 
+                { 
+                  id: 4,
+                  name: 'BE',
+                  categoryGroupId: 2, 
                 },
-                { id: 5,
-                name: 'FE',
-                categoryGroupId: 2, 
+                { 
+                  id: 5,
+                  name: 'FE',
+                  categoryGroupId: 2, 
+                },
+                { 
+                  id: 7,
+                  name: 'UI',
+                  categoryGroupId: 2, 
                 }
               ]);
             }
-          }, 1000);
+          }, 50);
+        });
+      };
+      let userAsyncCategoryLoader5 = function(paramMap) {
+        paramMap = paramMap || {};
+        return new Promise((resolve, reject)=>{
+          setTimeout(()=>{          
+            resolve([
+              { id: 14,
+                name: 'JAVA',
+                categoryGroupId: 5, 
+              },
+              { id: 15,
+                name: 'Spring',
+                categoryGroupId: 5, 
+              },
+              { id: 16,
+                name: 'C',
+                categoryGroupId: 5, 
+              },
+              { id: 17,
+                name: 'C#',
+                categoryGroupId: 5, 
+              },
+            ]);
+          }, 50);
+        });
+      };
+      let userAsyncCategoryLoader11 = function(paramMap) {
+        paramMap = paramMap || {};
+        return new Promise((resolve, reject)=>{
+          setTimeout(()=>{          
+            resolve([
+              { id: 31,
+                name: '~7',
+                categoryGroupId: 11, 
+              },
+              { id: 32,
+                name: '8~15',
+                categoryGroupId: 11, 
+              },
+              { id: 33,
+                name: '15~',
+                categoryGroupId: 11, 
+              },
+            ]);
+          }, 50);
         });
       };
 
@@ -886,20 +1110,110 @@
       let asyncCategoryLoader2 = (paramMap)=>(userAsyncCategoryLoader2(paramMap).then(dataList=>(dataList.map(data=>(
         new Category(data.id, data.name, data.categoryGroupId)
       )))));      
+      let asyncCategoryLoader5 = (paramMap)=>(userAsyncCategoryLoader5(paramMap).then(dataList=>(dataList.map(data=>(
+        new Category(data.id, data.name, data.categoryGroupId)
+      )))));      
+      let asyncCategoryLoader11 = (paramMap)=>(userAsyncCategoryLoader11(paramMap).then(dataList=>(dataList.map(data=>(
+        new Category(data.id, data.name, data.categoryGroupId)
+      )))));      
       
       let categoryTree = new CategoryTree(
         asyncCategoryGroupsLoader, 
         asyncCategoriesLoader, 
         asyncRelationsLoader, 
         {
-          '2': asyncCategoryLoader2
+          '2': asyncCategoryLoader2,
+          '5': asyncCategoryLoader5,
+          '11': asyncCategoryLoader11
         }
       );
       //categoryTree.addAsynegoryLoader('2', asyncCategoryLoader2);
+      // let categoryTree1 = new CategoryTree(
+      //   asyncCategoryGroupsLoader, 
+      //   asyncCategoriesLoader, 
+      //   asyncRelationsLoader, 
+      //   {
+      //     '2': asyncCategoryLoader2
+      //   }
+      // );
       
       categoryTree.onLoad = function(){
-        categoryTree.findNextCategory([1,5,19, 26, 24]);
+        //categoryTree.findNextCategory(['1','5','19','26','24']);
       };
+
+      categoryTree.onChange = function(categoryGroup, category) {
+        //console.log('onChange', categoryGroup, category);
+      };
+
+      let categoryTreeRenderer = new CategoryTreeRenderer(categoryTree);
+      
+      categoryTreeRenderer.onBeforeRender = function() {
+        document.getElementById('container').innerHTML = '';
+      }
+
+      categoryTreeRenderer.onRender = function(categoryGroup, defaultCategory, callbackChange) {
+        let div = document.createElement('div');
+        let html = '';
+
+        div.classList.add('select');
+
+        if(categoryGroup.id==='5') {
+          categoryGroup.categories.forEach(category=>{
+            let checked = (String(category.id)===String(defaultCategory.id))? 'checked':'';
+            html+=`<input type="radio" name="categoryGroup${categoryGroup.id}" value="${category.id}" ${checked} />${category.name}`;
+            div.innerHTML = html;
+          });
+
+          [...div.children].forEach(select=>{
+            select.addEventListener('click', (e)=>{
+              callbackChange(e.currentTarget.value, ()=>{
+                let currentDiv = div.nextElementSibling;
+              
+                while(currentDiv?.classList.contains('select')) {
+                  let removeDiv = currentDiv;
+                  currentDiv=currentDiv.nextElementSibling;
+                  removeDiv.remove();
+                }
+              });
+            });
+          });
+        } else {
+          html+=`<label>${categoryGroup.name}</label>`;
+          html+=`<select>`;
+
+          categoryGroup.categories.forEach(category=>{
+            let selected = (String(category.id)===String(defaultCategory.id))? 'selected':'';
+            html+=`  <option value=${category.id} ${selected}>${category.name}</option>`;
+          });
+
+          html+=`</select>`;
+
+          div.innerHTML = html;
+          let select = div.children[1];
+          
+          select.addEventListener('change', (e)=>{
+            callbackChange(e.currentTarget.value, ()=>{
+              let currentDiv = div.nextElementSibling;
+            
+              while(currentDiv?.classList.contains('select')) {
+                let removeDiv = currentDiv;
+                currentDiv=currentDiv.nextElementSibling;
+                removeDiv.remove();
+              }
+            });
+          });
+          select.addEventListener('change', (e)=>{
+            console.log('change2');
+          });
+        }
+        
+        document.getElementById('container').appendChild(div);
+      }
+
+      // let categoryTreeRenderer1 = new CategoryTreeRenderer(categoryTree1);
+      // categoryTreeRenderer1.render();
+      // 1. 사용자가 select 이외에 대상에 대해 렌더링이 가능해야함
+      // 2. 하나 이상의 categoryTree가 렌더링 가능해야함      
   </script>
 </body>
 </html>

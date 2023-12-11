@@ -1,139 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <style>
-        label {
-            background : skyblue;
-            padding: 5px 10px;
-            color: #fff;
-            height: 30px;
-            box-sizing: border-box;
-            font-weight: bold;
-        }
-        select{padding: 5px 10px; height: 30px; box-sizing: border-box; border-radius: 4px; border: none; font-weight: bold;}
-        #user {
-            display: flex; 
-            justify-content : flex-start;
-        }
-        #user1 {
-            display: flex;
-            justify-content : flex-start;
-        }
-        #admin {
-            display: flex; 
-            justify-content : flex-start;
-        }
-        #admin div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc;}
-        #user div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc; cursor: pointer;}
-        #user1 div {display: flex; align-items: center; margin-right: 10px; border: 1px solid #ccc; cursor: pointer;}
-        section {margin-bottom: 50px;}
-        button {max-height: 50px;}
-  </style>
-</head>
-<body>
-    <div style="display: flex;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      label {
+        background: skyblue;
+        padding: 5px 10px;
+        color: #fff;
+        height: 30px;
+        box-sizing: border-box;
+        font-weight: bold;
+      }
+      select {
+        padding: 5px 10px;
+        height: 30px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        border: none;
+        font-weight: bold;
+      }
+      #user {
+        display: flex;
+        justify-content: flex-start;
+      }
+      #user1 {
+        display: flex;
+        justify-content: flex-start;
+      }
+      #admin {
+        display: flex;
+        justify-content: flex-start;
+      }
+      #admin div {
+        display: flex;
+        align-items: center;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+      }
+      #user div {
+        display: flex;
+        align-items: center;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+      }
+      #user1 div {
+        display: flex;
+        align-items: center;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+      }
+      section {
+        margin-bottom: 50px;
+      }
+      button {
+        max-height: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="display: flex">
       <h1>사용자</h1>
     </div>
-    <div id = "user"></div>
-    <div id = "user1"></div>
+    <div id="user"></div>
+    <div id="user1"></div>
     <script type="module">
-        
-        import {loadCategory, UserCategory, Categories, CategoryGroups, Relations} from "./js/category.js"
+      import {
+        loadCategory,
+        UserCategory,
+        Categories,
+        CategoryGroups,
+        Relations,
+      } from "./js/category.js";
 
-        (function() {
+      (function () {
+        let toggle = false;
+        let asyncCategoryRequestMap = {
+          2: function (categoryGroupId, targetUrl) {
+            toggle = !toggle;
+            return new Promise((resolve, reject) => {
+              setTimeout(async () => {
+                const result = await fetch(targetUrl).then((res) => res.json());
+                resolve(result[categoryGroupId][toggle]);
+              }, 1000);
+            });
+          },
+        };
 
-            let toggle = false;
-            let asyncCategoryRequestMap = {
-                '2': function(categoryGroupId, targetUrl) {
-                    toggle=!toggle;
-                    return new Promise((resolve, reject)=>{
-                        setTimeout(async ()=>{ 
-                                const result = await fetch(targetUrl).then(res => res.json()); 
-                                resolve(result[categoryGroupId][toggle]);
-                        }, 1000);
-                    });
-                }
+        let userCallback = (categoryGroupId) => {
+          let userCategoryId = categoryGroupId;
+
+          let categoryLoader = asyncCategoryRequestMap[userCategoryId];
+          const targetUrl = "./data/newCategories.json";
+
+          if (categoryLoader) {
+            return categoryLoader(userCategoryId, targetUrl).then(
+              (categories) => {
+                const result = categories.map((item) => {
+                  return new Categories(
+                    item.id,
+                    item.name,
+                    item.categoryGroupId
+                  );
+                });
+                return result;
+              }
+            );
+          }
+        };
+
+        async function userCategorySelect() {
+          let categoryGroups = await fetch("./data/categoryGroup.json").then(
+            (res) => res.json()
+          );
+          let categories = await fetch("./data/categories.json").then((res) =>
+            res.json()
+          );
+          let relations = await fetch("./data/relations.json").then((res) =>
+            res.json()
+          );
+          let defaultCategoryIdList = [1, 5, 19, 26, 24];
+
+          const categoryGroupList = [];
+          const categoriesList = [];
+          const relationsList = [];
+
+          categoryGroups.forEach((data) => {
+            categoryGroupList.push(new CategoryGroups(data.id, data.name));
+          });
+          categories.forEach((data) => {
+            categoriesList.push(
+              new Categories(data.id, data.name, data.categoryGroupId)
+            );
+          });
+          relations.forEach((data) => {
+            relationsList.push(
+              new Relations(
+                data.relationGroupId,
+                data.order,
+                data.categoryGroupId,
+                data.values,
+                data.operator,
+                data.valueType
+              )
+            );
+          });
+
+          const userCategory = new UserCategory(
+            "user",
+            "div",
+            "div",
+            "div",
+            "div",
+            "category",
+            "select",
+            "selectLabel",
+            "options",
+            "click"
+          );
+
+          const userCategory1 = new UserCategory(
+            "user1",
+            "div",
+            "div",
+            "div",
+            "div",
+            "category",
+            "select",
+            "selectLabel",
+            "options",
+            "click"
+          );
+          // 카테고리 옵션을 지정해줄 클래스
+          // 데이터들을 우리(모듈)이 알아들을 수 잇게 dto 클래스
+
+          loadCategory(
+            userCategory,
+            categoryGroupList,
+            categoriesList,
+            relationsList,
+            defaultCategoryIdList,
+            userCallback
+          );
+          loadCategory(
+            userCategory1,
+            categoryGroupList,
+            categoriesList,
+            relationsList,
+            defaultCategoryIdList,
+            userCallback
+          );
+        }
+
+        userCategorySelect();
+
+        const onetohund = {
+          [Symbol.iterator]() {
+            let num = 0;
+            const max = 100;
+
+            return {
+              next() {
+                num = ++num;
+                return { value: num, done: max >= num };
+              },
             };
+          },
+        };
 
-            let userCallback = (categoryGroupId) => {
-                let userCategoryId = categoryGroupId;
-
-                let categoryLoader = asyncCategoryRequestMap[userCategoryId];
-                const targetUrl = "./data/newCategories.json";
-
-                if(categoryLoader) {
-                    return categoryLoader(userCategoryId, targetUrl).then(categories=>{
-                        const result = categories.map(item => {
-                                return new Categories(item.id, item.name, item.categoryGroupId);
-                        });
-                        return result;
-                    });
-                }
-            };
-
-            async function userCategorySelect() {
-                let categoryGroups = await fetch("./data/categoryGroup.json").then(res => res.json());
-                let categories = await fetch("./data/categories.json").then(res => res.json());
-                let relations = await fetch("./data/relations.json").then(res => res.json());
-                let defaultCategoryIdList = [1, 5, 19, 26, 24];
-
-
-
-                const categoryGroupList = [];
-                const categoriesList = [];
-                const relationsList = [];
-
-                categoryGroups.forEach(data => {
-                    categoryGroupList.push(new CategoryGroups(data.id, data.name));
-                });
-                categories.forEach(data => {
-                    categoriesList.push(new Categories(data.id, data.name, data.categoryGroupId));
-                });
-                relations.forEach(data => {
-                    relationsList.push(new Relations(
-                              data.relationGroupId
-                            , data.order
-                            , data.categoryGroupId
-                            , data.values
-                            , data.operator
-                            , data.valueType
-                    ));
-                });
-
-                const userCategory = new UserCategory("user", "div", "div", "div", "div", "category", "select", "selectLabel", "options","click");
-
-                const userCategory1 = new UserCategory("user1", "div", "div", "div", "div", "category", "select", "selectLabel", "options","click");
-                // 카테고리 옵션을 지정해줄 클래스
-                // 데이터들을 우리(모듈)이 알아들을 수 잇게 dto 클래스
-
-                loadCategory(userCategory, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, userCallback);
-                loadCategory(userCategory1, categoryGroupList, categoriesList, relationsList, defaultCategoryIdList, userCallback);
-            }
-
-            userCategorySelect();
-
-
-            const onetohund = {
-                [Symbol.iterator]() {
-                    let num = 0;
-                    const max = 100;
-
-                    return  {
-                        next() {
-                            num = ++num;
-                            return {value: num, done:num <= max};
-                        }
-                    }
-                }
-            }
-
-            for (const num of onetohund) {
-                console.log(num);
-            }
-        })();
+        for (const num of onetohund) {
+          console.log(num);
+        }
+      })();
     </script>
-</body>
+  </body>
 </html>
